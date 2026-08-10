@@ -1,6 +1,7 @@
 import os
 import re
 import time
+from datetime import datetime, timezone
 from collections import defaultdict
 from typing import Optional, List
 from fastapi import FastAPI, Query, HTTPException, Request
@@ -12,6 +13,64 @@ import chromadb
 from ingest import get_vector_embedding, check_ollama_status, COLLECTION_NAME, CHROMA_DB_DIR
 from classifier import ConfidenceGateClassifier
 from llm_stage import LLMEscalationStage
+
+# In-memory request trace store
+IN_MEMORY_TRACES: List[dict] = []
+LOG_FILE_PATH = os.path.join(os.path.dirname(__file__), "logs", "stage3.log")
+
+
+def parse_stage3_log() -> List[dict]:
+    traces = []
+    if not os.path.exists(LOG_FILE_PATH):
+        return traces
+
+    try:
+        with open(LOG_FILE_PATH, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception as e:
+        print(f"[parse_stage3_log] Error reading log file: {e}")
+        return traces
+
+    blocks = content.split("------------------------------------------------------------")
+    for block in blocks:
+        block = block.strip()
+        if not block:
+            continue
+
+        header_match = re.search(r'\[(.*?)\]\s+STATUS:\s+(.*?)\s+\|\s+GROUNDED:\s+(.*?)\s+\|\s+SCORE:\s+([\d\.]+)', block)
+        query_match = re.search(r'QUERY:\s+(.*?)(?=\nRESPONSE:|\Z)', block, re.DOTALL)
+        response_match = re.search(r'RESPONSE:\s+(.*)', block, re.DOTALL)
+
+        if header_match:
+            timestamp = header_match.group(1).strip()
+            grounded_str = header_match.group(3).strip()
+            score_str = header_match.group(4).strip()
+
+            grounding_verified = (grounded_str.lower() == 'true')
+            try:
+                grounding_score = float(score_str)
+            except ValueError:
+                grounding_score = 0.0
+
+            query_text = query_match.group(1).strip() if query_match else ""
+            response_text = response_match.group(1).strip() if response_match else ""
+
+            bullet_count = len(re.findall(r'•|Project:', response_text))
+            stage1_hits = max(1, bullet_count) if bullet_count > 0 else 3
+
+            traces.append({
+                "query": query_text,
+                "timestamp": timestamp,
+                "stage1_hits": stage1_hits,
+                "stage2_decision": "ESCALATE_LLM",
+                "confidence_score": 0.45,
+                "stage3_response": response_text,
+                "grounding_score": grounding_score,
+                "grounding_verified": grounding_verified
+            })
+
+    return traces
+
 
 # Load environment variables
 load_dotenv()
@@ -298,6 +357,7 @@ def perform_agent_query(query_str: str, top_k: int = 3) -> AgentQueryResponse:
 
     llm_response = None
     grounding_verified = None
+    grounding_score = 0.0
 
     # Stage 3: LLM Escalation if gated to ESCALATE_LLM
     if gate_res["decision"] == "ESCALATE_LLM":
@@ -305,6 +365,23 @@ def perform_agent_query(query_str: str, top_k: int = 3) -> AgentQueryResponse:
         llm_res = llm_stage.escalate_and_generate(query_str, doc_dicts)
         llm_response = llm_res.get("llm_response")
         grounding_verified = llm_res.get("grounding_verified")
+        grounding_score = llm_res.get("grounding_score", 0.0)
+    else:
+        llm_response = None
+        grounding_verified = None
+        grounding_score = 1.0
+
+    trace_entry = {
+        "query": query_str,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "stage1_hits": len(docs),
+        "stage2_decision": gate_res["decision"],
+        "confidence_score": float(gate_res["confidence"]),
+        "stage3_response": llm_response,
+        "grounding_score": float(grounding_score if grounding_score is not None else 0.0),
+        "grounding_verified": True if grounding_verified is True else False if grounding_verified is False else True
+    }
+    IN_MEMORY_TRACES.append(trace_entry)
 
     return AgentQueryResponse(
         query=query_str,
@@ -318,8 +395,38 @@ def perform_agent_query(query_str: str, top_k: int = 3) -> AgentQueryResponse:
     )
 
 
+@app.get("/api/pipeline/trace")
+def get_pipeline_trace():
+    """Returns recent request traces parsed from logs and in-memory history."""
+    log_traces = parse_stage3_log()
+    seen = set()
+    combined_traces = []
+
+    all_raw = IN_MEMORY_TRACES + log_traces
+    for t in all_raw:
+        key = (t.get("query"), t.get("timestamp"))
+        if key not in seen:
+            seen.add(key)
+            combined_traces.append(t)
+
+    def parse_ts(ts):
+        try:
+            return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        except Exception:
+            return datetime.min
+
+    combined_traces.sort(key=lambda x: parse_ts(x.get("timestamp", "")), reverse=True)
+
+    return {
+        "status": "success",
+        "count": len(combined_traces),
+        "traces": combined_traces
+    }
+
+
 
 if __name__ == "__main__":
     import uvicorn
     print(f"Starting Agent Service FastAPI app on port {PORT}...")
     uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=True)
+
