@@ -15,7 +15,7 @@ os.environ["DB_PATH"] = temp_db_path
 
 from fastapi.testclient import TestClient
 from main import app
-from database import init_db
+from database import init_db, reset_otp_rate_limit, save_otp, verify_lead_otp
 
 class TestBrokerAPI(unittest.TestCase):
     @classmethod
@@ -27,6 +27,15 @@ class TestBrokerAPI(unittest.TestCase):
     def tearDownClass(cls):
         if os.path.exists(temp_db_path):
             os.remove(temp_db_path)
+
+    def setUp(self):
+        reset_otp_rate_limit()
+        # Clear rate limit middleware memory to prevent test order interference
+        current = getattr(app, "middleware_stack", None)
+        while current is not None:
+            if hasattr(current, "requests") and isinstance(current.requests, dict):
+                current.requests.clear()
+            current = getattr(current, "app", None)
 
     def test_01_health_endpoint(self):
         response = self.client.get("/health")
@@ -94,6 +103,16 @@ class TestBrokerAPI(unittest.TestCase):
             "email": "client@example.com",
             "slot_time": "2026-08-11T10:00:00Z"
         }
+        # Attempt booking without OTP verification -> 403 Forbidden
+        unverified_resp = self.client.post("/api/booking", json=payload)
+        self.assertEqual(unverified_resp.status_code, 403)
+        self.assertEqual(unverified_resp.json()["detail"], "Lead email must be OTP-verified before booking consultation.")
+
+        # Verify lead email via OTP
+        save_otp("client@example.com", "123456")
+        self.assertTrue(verify_lead_otp("client@example.com", "123456"))
+
+        # Retry booking after OTP verification -> 200 OK
         response = self.client.post("/api/booking", json=payload)
         self.assertEqual(response.status_code, 200)
         data = response.json()

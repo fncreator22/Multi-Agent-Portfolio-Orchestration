@@ -17,7 +17,7 @@ os.environ["DB_PATH"] = temp_db_path
 from fastapi.testclient import TestClient
 import email_service
 from main import app
-from database import init_db
+from database import init_db, reset_otp_rate_limit, save_otp, verify_lead_otp
 
 
 class TestEmailService(unittest.TestCase):
@@ -33,6 +33,7 @@ class TestEmailService(unittest.TestCase):
             os.remove(temp_db_path)
 
     def setUp(self):
+        reset_otp_rate_limit()
         # Reset environment variable defaults for each test
         os.environ["ENABLE_SMTP"] = "false"
         os.environ["SMTP_HOST"] = "smtp.example.com"
@@ -138,7 +139,9 @@ class TestEmailService(unittest.TestCase):
             self.assertEqual(resp_contact.status_code, 200)
             mock_lead.assert_called_once()
 
-            # 3. POST /api/booking
+            # 3. POST /api/booking (requires OTP-verified email)
+            save_otp("client@example.com", "123456")
+            verify_lead_otp("client@example.com", "123456")
             resp_booking = self.client.post("/api/booking", json={
                 "email": "client@example.com",
                 "slot_time": "2026-08-11T10:00:00Z"

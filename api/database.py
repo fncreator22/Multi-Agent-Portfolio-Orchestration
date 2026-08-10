@@ -1,9 +1,45 @@
 import json
 import os
 import sqlite3
-from datetime import datetime, timezone
+import time
+from collections import defaultdict
+from datetime import datetime, timezone, timedelta
+from typing import Optional
 
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "leads.db")
+
+_otp_rate_limit_store = defaultdict(list)
+
+def check_otp_rate_limit(email: str, ip: str) -> bool:
+    """
+    Tracks OTP requests per email and per IP.
+    Returns True if request exceeds rate limit (max 5 requests per 10 minutes / 600s),
+    False otherwise.
+    """
+    now = time.time()
+    window_seconds = 600  # 10 minutes
+    max_requests = 5
+
+    clean_email = email.strip().lower() if email else ""
+    clean_ip = ip.strip() if ip else "127.0.0.1"
+
+    # Prune old timestamps
+    _otp_rate_limit_store[clean_email] = [ts for ts in _otp_rate_limit_store[clean_email] if now - ts < window_seconds]
+    _otp_rate_limit_store[clean_ip] = [ts for ts in _otp_rate_limit_store[clean_ip] if now - ts < window_seconds]
+
+    email_count = len(_otp_rate_limit_store[clean_email])
+    ip_count = len(_otp_rate_limit_store[clean_ip])
+
+    if email_count >= max_requests or ip_count >= max_requests:
+        return True
+
+    _otp_rate_limit_store[clean_email].append(now)
+    _otp_rate_limit_store[clean_ip].append(now)
+    return False
+
+def reset_otp_rate_limit():
+    _otp_rate_limit_store.clear()
+
 
 DEFAULT_PROJECTS = [
     {
@@ -395,10 +431,12 @@ def init_db():
 
     conn.close()
 
-def save_otp(email: str, otp_code: str, expires_at: str):
+def save_otp(email: str, otp_code: str, expires_at: Optional[str] = None):
+    if not expires_at:
+        expires_at = (datetime.now(timezone.utc) + timedelta(seconds=600)).isoformat()
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM otp_tokens WHERE email = ?", (email,))
+    cursor.execute("DELETE FROM otp_tokens WHERE LOWER(email) = LOWER(?)", (email,))
     cursor.execute(
         "INSERT INTO otp_tokens (email, otp_code, expires_at) VALUES (?, ?, ?)",
         (email, otp_code, expires_at)
@@ -428,6 +466,38 @@ def verify_otp(email: str, otp_code: str) -> bool:
     conn.commit()
     conn.close()
     return True
+
+def verify_lead_otp(email: str, otp_code: str) -> bool:
+    if not verify_otp(email, otp_code):
+        return False
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE leads SET status = 'verified' WHERE LOWER(email) = LOWER(?)", (email,))
+    if cursor.rowcount == 0:
+        created_at = datetime.now(timezone.utc).isoformat()
+        cursor.execute(
+            """
+            INSERT INTO leads (email, name, message, project_slug, created_at, status)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (email.lower(), "Verified Lead", "OTP Verification", "", created_at, "verified")
+        )
+    conn.commit()
+    conn.close()
+    return True
+
+def is_lead_verified(email: str) -> bool:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id FROM leads WHERE LOWER(email) = LOWER(?) AND status = 'verified'",
+        (email,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row is not None
+
 
 def get_kb_projects() -> list:
     conn = get_db_connection()

@@ -18,7 +18,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import email_service
 from database import (
     init_db, create_lead, get_leads, create_booking, get_bookings,
-    save_otp, verify_otp, get_kb_projects, save_kb_project
+    save_otp, verify_otp, verify_lead_otp, is_lead_verified,
+    check_otp_rate_limit, get_kb_projects, save_kb_project
 )
 
 # Load environment variables
@@ -163,6 +164,12 @@ async def create_booking_entry(req: BookingRequest, background_tasks: Background
     if not slot_time:
         raise HTTPException(status_code=400, detail="Slot time is required.")
 
+    if not is_lead_verified(email):
+        raise HTTPException(
+            status_code=403,
+            detail="Lead email must be OTP-verified before booking consultation."
+        )
+
     meeting_link = f"https://meet.jit.si/portfolio-booking-{uuid.uuid4().hex[:8]}"
 
     booking = create_booking(
@@ -195,12 +202,59 @@ async def list_bookings():
         "bookings": bookings
     }
 
+# Public Lead OTP Flow Endpoints
+@app.post("/api/public/request-lead-otp")
+async def request_lead_otp(req: OTPRequestPayload, request: Request):
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    email = validate_email_format(req.email)
+
+    if check_otp_rate_limit(email, client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded. Maximum 5 OTP requests per 10 minutes allowed."
+        )
+
+    otp_code = f"{random.randint(100000, 999999)}"
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+    save_otp(email, otp_code, expires_at)
+    email_service.send_otp_email(email, otp_code)
+    return {
+        "status": "success",
+        "message": "OTP code generated and sent to email",
+        "otp_code": otp_code
+    }
+
+@app.post("/api/public/verify-lead-otp")
+async def verify_lead_otp_endpoint(req: OTPVerifyPayload):
+    email = validate_email_format(req.email)
+    otp_code = req.otp_code.strip()
+    if not otp_code:
+        raise HTTPException(status_code=400, detail="OTP code is required.")
+    
+    is_valid = verify_lead_otp(email, otp_code)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP code.")
+    
+    return {
+        "status": "success",
+        "message": "Lead email verified successfully",
+        "email": email
+    }
+
 # Admin OTP Auth Endpoints
 @app.post("/api/admin/auth/request-otp")
-async def request_otp(req: OTPRequestPayload):
+async def request_otp(req: OTPRequestPayload, request: Request):
+    client_ip = request.client.host if request.client else "127.0.0.1"
     email = validate_email_format(req.email)
+
+    if check_otp_rate_limit(email, client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded. Maximum 5 OTP requests per 10 minutes allowed."
+        )
+
     otp_code = f"{random.randint(100000, 999999)}"
-    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
     save_otp(email, otp_code, expires_at)
     email_service.send_otp_email(email, otp_code)
     return {
