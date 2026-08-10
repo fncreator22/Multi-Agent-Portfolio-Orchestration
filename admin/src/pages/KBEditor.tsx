@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Zap, AlertCircle, Check, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface CaseStudyDetails {
@@ -179,7 +180,7 @@ export const KBEditor: React.FC = () => {
       {/* Top Navbar */}
       <header className="border-b border-text-muted/20 bg-bg-base/80 backdrop-blur sticky top-0 z-10 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <span className="text-xl font-bold font-mono text-accent-primary">⚡ Admin Portal</span>
+          <span className="text-xl font-bold font-mono text-accent-primary inline-flex items-center gap-1.5"><Zap className="w-5 h-5" /> Admin Portal</span>
           <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent-primary/10 border border-accent-primary/30 text-accent-primary font-mono">
             {adminEmail || 'authenticated'}
           </span>
@@ -225,14 +226,16 @@ export const KBEditor: React.FC = () => {
         </div>
 
         {error && (
-          <div className="p-4 rounded-lg bg-accent-warn/10 border border-accent-warn/30 text-accent-warn text-sm font-mono">
-            ⚠️ {error}
+          <div className="p-4 rounded-lg bg-accent-warn/10 border border-accent-warn/30 text-accent-warn text-sm font-mono flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
         {message && (
-          <div className="p-4 rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-sm font-mono">
-            ✅ {message}
+          <div className="p-4 rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-sm font-mono flex items-center gap-2">
+            <Check className="w-4 h-4 shrink-0" />
+            <span>{message}</span>
           </div>
         )}
 
@@ -277,9 +280,9 @@ export const KBEditor: React.FC = () => {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="px-5 py-2.5 bg-accent-primary text-bg-base font-semibold rounded-lg hover:opacity-90 transition-opacity text-sm font-mono disabled:opacity-50"
+                      className="px-5 py-2.5 bg-accent-primary text-bg-base font-semibold rounded-lg hover:opacity-90 transition-opacity text-sm font-mono disabled:opacity-50 inline-flex items-center gap-1.5"
                     >
-                      {saving ? 'Saving...' : '💾 Save Case Study Updates'}
+                      {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Case Study Updates</>}
                     </button>
                   </div>
 
@@ -442,9 +445,9 @@ export const KBEditor: React.FC = () => {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="px-6 py-3 bg-accent-primary text-bg-base font-semibold rounded-lg hover:opacity-90 transition-opacity text-sm font-mono disabled:opacity-50"
+                      className="px-6 py-3 bg-accent-primary text-bg-base font-semibold rounded-lg hover:opacity-90 transition-opacity text-sm font-mono disabled:opacity-50 inline-flex items-center gap-1.5"
                     >
-                      {saving ? 'Saving Changes...' : '💾 Save Case Study Updates'}
+                      {saving ? 'Saving Changes...' : <><Save className="w-4 h-4" /> Save Case Study Updates</>}
                     </button>
                   </div>
                 </form>

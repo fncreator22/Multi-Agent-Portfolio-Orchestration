@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Space+Grotesk:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Space+Grotesk:wght@300..700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,12 +6,26 @@
 
 :root {
   --bg-base: #0a0b12;
+  --bg-panel: rgba(18, 20, 31, 0.6);
   --accent-primary: #5eead4;
   --accent-warn: #ffb454;
   --text-primary: #e8faf5;
   --text-muted: #7d9c96;
   --font-display: 'Space Grotesk', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Inter', sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --shadow-soft: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
 }
 
 body {

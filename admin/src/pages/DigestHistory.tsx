@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Zap, Clock, AlertCircle, Check, BarChart2, Tag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface QueryTheme {
@@ -104,7 +105,7 @@ export const DigestHistory: React.FC = () => {
       {/* Top Navbar */}
       <header className="border-b border-text-muted/20 bg-bg-base/80 backdrop-blur sticky top-0 z-10 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <span className="text-xl font-bold font-mono text-accent-primary">⚡ Admin Portal</span>
+          <span className="text-xl font-bold font-mono text-accent-primary inline-flex items-center gap-1.5"><Zap className="w-5 h-5" /> Admin Portal</span>
           <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent-primary/10 border border-accent-primary/30 text-accent-primary font-mono">
             {adminEmail || 'authenticated'}
           </span>
@@ -156,20 +157,22 @@ export const DigestHistory: React.FC = () => {
               disabled={triggering}
               className="px-4 py-2 bg-accent-primary text-bg-base rounded-lg text-sm font-mono font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center space-x-2"
             >
-              <span>{triggering ? '⏳ Generating Digest...' : '⚡ Trigger New Digest'}</span>
+              <span className="inline-flex items-center gap-1.5">{triggering ? <><Clock className="w-4 h-4 animate-spin" /> Generating Digest...</> : <><Zap className="w-4 h-4" /> Trigger New Digest</>}</span>
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="p-4 rounded-lg bg-accent-warn/10 border border-accent-warn/30 text-accent-warn text-sm font-mono">
-            ⚠️ {error}
+          <div className="p-4 rounded-lg bg-accent-warn/10 border border-accent-warn/30 text-accent-warn text-sm font-mono flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
         {message && (
-          <div className="p-4 rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-sm font-mono">
-            ✅ {message}
+          <div className="p-4 rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-sm font-mono flex items-center gap-2">
+            <Check className="w-4 h-4 shrink-0" />
+            <span>{message}</span>
           </div>
         )}
 
@@ -179,7 +182,7 @@ export const DigestHistory: React.FC = () => {
           </div>
         ) : digests.length === 0 ? (
           <div className="border border-text-muted/20 rounded-xl p-12 text-center bg-bg-base space-y-4">
-            <div className="text-4xl">📊</div>
+            <div className="flex justify-center"><BarChart2 className="w-10 h-10 text-accent-primary" /></div>
             <div className="text-lg font-semibold text-text-primary">No Fortnightly Digests Found</div>
             <p className="text-sm text-text-muted max-w-md mx-auto">
               No performance digests have been generated yet. Click "Trigger New Digest" above to generate your first fortnightly summary report.
@@ -187,9 +190,9 @@ export const DigestHistory: React.FC = () => {
             <button
               onClick={handleTriggerDigest}
               disabled={triggering}
-              className="px-5 py-2.5 bg-accent-primary text-bg-base font-mono font-bold text-sm rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="px-5 py-2.5 bg-accent-primary text-bg-base font-mono font-bold text-sm rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center gap-1.5"
             >
-              {triggering ? 'Generating...' : '⚡ Trigger First Fortnightly Digest'}
+              {triggering ? 'Generating...' : <><Zap className="w-4 h-4" /> Trigger First Fortnightly Digest</>}
             </button>
           </div>
         ) : (
@@ -307,8 +310,8 @@ export const DigestHistory: React.FC = () => {
 
                   {/* Top Recurring Question Themes */}
                   <div className="space-y-3 border-t border-text-muted/20 pt-4">
-                    <h3 className="text-sm font-bold font-mono text-accent-primary uppercase tracking-wider">
-                      🏷️ Top 5 Recurring Query Themes
+                    <h3 className="text-sm font-bold font-mono text-accent-primary uppercase tracking-wider inline-flex items-center gap-1.5">
+                      <Tag className="w-4 h-4" /> Top 5 Recurring Query Themes
                     </h3>
                     {selectedDigest.summary?.top_query_themes && selectedDigest.summary.top_query_themes.length > 0 ? (
                       <div className="flex flex-wrap gap-2">

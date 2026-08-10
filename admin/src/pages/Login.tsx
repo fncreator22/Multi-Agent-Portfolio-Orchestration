@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Lock, AlertCircle, Info, Key } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Login: React.FC = () => {
@@ -64,8 +65,8 @@ export const Login: React.FC = () => {
     <div className="min-h-screen bg-bg-base text-text-primary flex flex-col items-center justify-center p-4 font-display">
       <div className="w-full max-w-md bg-bg-base border border-text-muted/20 rounded-xl p-8 shadow-2xl space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-xl mb-2 font-mono">
-            🔐
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-primary/10 border border-accent-primary/30 text-accent-primary mb-2 font-mono">
+            <Lock className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">
             Admin Authentication
@@ -78,20 +79,22 @@ export const Login: React.FC = () => {
         </div>
 
         {error && (
-          <div className="p-3 text-sm rounded-lg bg-accent-warn/10 border border-accent-warn/30 text-accent-warn font-mono">
-            ⚠️ {error}
+          <div className="p-3 text-sm rounded-lg bg-accent-warn/10 border border-accent-warn/30 text-accent-warn font-mono flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
         {infoMsg && (
-          <div className="p-3 text-sm rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary font-mono">
-            ℹ️ {infoMsg}
+          <div className="p-3 text-sm rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary font-mono flex items-center gap-2">
+            <Info className="w-4 h-4 shrink-0" />
+            <span>{infoMsg}</span>
           </div>
         )}
 
         {demoCode && step === 'otp' && (
-          <div className="p-3 text-xs rounded-lg bg-accent-primary/10 border border-accent-primary/40 text-accent-primary font-mono text-center">
-            🔑 <span className="font-bold">Demo OTP Code Generated:</span>{' '}
+          <div className="p-3 text-xs rounded-lg bg-accent-primary/10 border border-accent-primary/40 text-accent-primary font-mono text-center flex items-center justify-center gap-1.5">
+            <Key className="w-4 h-4 shrink-0" /> <span className="font-bold">Demo OTP Code Generated:</span>{' '}
             <span className="text-base tracking-widest underline">{demoCode}</span>
           </div>
         )}

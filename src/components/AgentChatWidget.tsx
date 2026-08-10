@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { FileText } from 'lucide-react';
 import { useShell } from '../context/ShellContext';
 import { GuardianVisualizer } from './canvas/GuardianVisualizer';
 
@@ -350,7 +351,7 @@ export const AgentChatWidget: React.FC = () => {
                                 onClick={() => setIsOpen(false)}
                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-accent-primary/30 text-accent-primary hover:bg-accent-primary hover:text-bg-base transition-colors"
                               >
-                                <span>📄</span> {src.name}
+                                <FileText className="w-3 h-3" /> {src.name}
                               </Link>
                             ))}
                           </div>

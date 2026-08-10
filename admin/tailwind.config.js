@@ -8,6 +8,7 @@ export default {
     extend: {
       colors: {
         'bg-base': 'var(--bg-base)',
+        'panel': 'var(--bg-panel)',
         'accent-primary': 'var(--accent-primary)',
         'accent-warn': 'var(--accent-warn)',
         'text-primary': 'var(--text-primary)',
@@ -16,6 +17,15 @@ export default {
       fontFamily: {
         display: ['var(--font-display)'],
         mono: ['var(--font-mono)'],
+        body: ['Inter', 'sans-serif'],
+      },
+      borderRadius: {
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+      },
+      boxShadow: {
+        soft: 'var(--shadow-soft)',
       },
     },
   },

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Zap, RefreshCw, AlertCircle, MessageSquare, FileCode, User, Bot, Calendar, LinkIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface ConversationTurn {
@@ -94,7 +95,7 @@ export const LeadsDashboard: React.FC = () => {
       {/* Top Navbar */}
       <header className="border-b border-text-muted/20 bg-bg-base/80 backdrop-blur sticky top-0 z-10 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <span className="text-xl font-bold font-mono text-accent-primary">⚡ Admin Portal</span>
+          <span className="text-xl font-bold font-mono text-accent-primary inline-flex items-center gap-1.5"><Zap className="w-5 h-5" /> Admin Portal</span>
           <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent-primary/10 border border-accent-primary/30 text-accent-primary font-mono">
             {adminEmail || 'authenticated'}
           </span>
@@ -144,16 +145,17 @@ export const LeadsDashboard: React.FC = () => {
             <button
               onClick={fetchData}
               disabled={loading}
-              className="px-4 py-2 bg-bg-base border border-accent-primary/40 text-accent-primary rounded-lg text-sm font-mono hover:bg-accent-primary/10 transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-bg-base border border-accent-primary/40 text-accent-primary rounded-lg text-sm font-mono hover:bg-accent-primary/10 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
             >
-              🔄 {loading ? 'Refreshing...' : 'Refresh Data'}
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> {loading ? 'Refreshing...' : 'Refresh Data'}
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="p-4 rounded-lg bg-accent-warn/10 border border-accent-warn/30 text-accent-warn text-sm font-mono">
-            ⚠️ {error}
+          <div className="p-4 rounded-lg bg-accent-warn/10 border border-accent-warn/30 text-accent-warn text-sm font-mono flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -240,13 +242,13 @@ export const LeadsDashboard: React.FC = () => {
                             <td className="py-3 px-4 whitespace-nowrap">
                               <button
                                 onClick={() => toggleExpand(lead.id)}
-                                className={`px-3 py-1 rounded border text-xs font-mono transition-colors ${
+                                className={`px-3 py-1 rounded border text-xs font-mono transition-colors inline-flex items-center gap-1 ${
                                   isExpanded
                                     ? 'bg-accent-primary text-bg-base border-accent-primary font-bold'
                                     : 'border-accent-primary/30 text-accent-primary hover:bg-accent-primary/10'
                                 }`}
                               >
-                                💬 Transcript ({turnCount}) {isExpanded ? '▲' : '▼'}
+                                <MessageSquare className="w-3.5 h-3.5" /> Transcript ({turnCount}) {isExpanded ? '▲' : '▼'}
                               </button>
                             </td>
                           </tr>
@@ -257,7 +259,7 @@ export const LeadsDashboard: React.FC = () => {
                               <td colSpan={6} className="bg-text-muted/5 p-4 border-b border-text-muted/20">
                                 <div className="space-y-3 font-mono text-xs max-h-96 overflow-y-auto pr-2">
                                   <div className="flex items-center justify-between pb-2 border-b border-accent-primary/20 text-accent-primary font-bold">
-                                    <span>📜 Agent Conversation History (Lead #{lead.id})</span>
+                                    <span className="inline-flex items-center gap-1.5"><FileCode className="w-4 h-4" /> Agent Conversation History (Lead #{lead.id})</span>
                                     <span>{turnCount} turn(s) recorded</span>
                                   </div>
 
@@ -282,11 +284,11 @@ export const LeadsDashboard: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-1">
-                                          <div className="text-text-primary font-semibold">
-                                            <span className="text-accent-primary">👤 Visitor:</span> {turn.visitor_message}
+                                          <div className="text-text-primary font-semibold flex items-center gap-1">
+                                            <span className="text-accent-primary inline-flex items-center gap-1"><User className="w-3.5 h-3.5" /> Visitor:</span> {turn.visitor_message}
                                           </div>
                                           <div className="text-text-muted whitespace-pre-wrap pl-4 border-l-2 border-accent-primary/30">
-                                            <span className="text-accent-primary font-semibold">🤖 Agent:</span> {turn.agent_response}
+                                            <span className="text-accent-primary font-semibold inline-flex items-center gap-1"><Bot className="w-3.5 h-3.5" /> Agent:</span> {turn.agent_response}
                                           </div>
                                         </div>
                                       </div>
@@ -328,8 +330,8 @@ export const LeadsDashboard: React.FC = () => {
                         <td className="py-3 px-4 font-mono font-medium text-text-primary">
                           {booking.email}
                         </td>
-                        <td className="py-3 px-4 font-mono text-xs text-accent-primary whitespace-nowrap">
-                          📅 {formatDate(booking.slot_time)}
+                        <td className="py-3 px-4 font-mono text-xs text-accent-primary whitespace-nowrap inline-flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" /> {formatDate(booking.slot_time)}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <span className="px-2 py-0.5 rounded text-xs font-mono bg-accent-primary/20 text-accent-primary uppercase tracking-wider">
@@ -342,9 +344,9 @@ export const LeadsDashboard: React.FC = () => {
                               href={booking.meeting_link}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-accent-primary hover:underline"
+                              className="text-accent-primary hover:underline inline-flex items-center gap-1"
                             >
-                              🔗 Join Meeting
+                              <LinkIcon className="w-3.5 h-3.5" /> Join Meeting
                             </a>
                           ) : (
                             <span className="text-text-muted">N/A</span>
