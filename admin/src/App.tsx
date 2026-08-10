@@ -7,7 +7,8 @@ import { KBEditor } from './pages/KBEditor';
 import { DigestHistory } from './pages/DigestHistory';
 import { PipelineTrace } from './pages/PipelineTrace';
 import { FineTuneQueue } from './pages/FineTuneQueue';
-import { Users, Database, Activity, Cpu, ExternalLink, LogOut, Lock } from 'lucide-react';
+import { MemoryVault } from './pages/MemoryVault';
+import { Users, Database, Activity, Cpu, ExternalLink, LogOut, Lock, Archive } from 'lucide-react';
 
 const ProtectedLayout: React.FC = () => {
   const { isAuthenticated, adminEmail, logout } = useAuth();
@@ -52,6 +53,16 @@ const ProtectedLayout: React.FC = () => {
             }`}
           >
             <Database className="w-4 h-4" /> Knowledge Base
+          </Link>
+          <Link
+            to="/vault"
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              isActive('/vault')
+                ? 'text-accent-primary bg-accent-primary/10 border border-accent-primary/30 shadow-sm'
+                : 'text-text-muted hover:text-text-primary border border-transparent'
+            }`}
+          >
+            <Archive className="w-4 h-4" /> Memory Vault
           </Link>
           <Link
             to="/digests"
@@ -115,6 +126,7 @@ export const AppContent: React.FC = () => {
       <Route element={<ProtectedLayout />}>
         <Route path="/leads" element={<LeadsDashboard />} />
         <Route path="/kb" element={<KBEditor />} />
+        <Route path="/vault" element={<MemoryVault />} />
         <Route path="/digests" element={<DigestHistory />} />
         <Route path="/pipeline" element={<PipelineTrace />} />
         <Route path="/finetune" element={<FineTuneQueue />} />

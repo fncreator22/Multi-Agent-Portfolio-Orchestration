@@ -1126,5 +1126,77 @@ def rollback_model_version(version_id: int) -> Optional[dict]:
     return dict(updated_row) if updated_row else None
 
 
+def get_all_conversations(
+    session_id: Optional[str] = None,
+    lead_id: Optional[int] = None,
+    search_query: Optional[str] = None
+) -> list:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    query = "SELECT id, session_id, lead_id, email, visitor_message, agent_stage, agent_response, created_at FROM conversations"
+    conditions = []
+    params = []
+
+    if session_id and session_id.strip():
+        conditions.append("session_id = ?")
+        params.append(session_id.strip())
+
+    if lead_id is not None:
+        conditions.append("lead_id = ?")
+        params.append(lead_id)
+
+    if search_query and search_query.strip():
+        q_str = f"%{search_query.strip()}%"
+        conditions.append("(visitor_message LIKE ? OR agent_response LIKE ? OR COALESCE(email, '') LIKE ? OR session_id LIKE ?)")
+        params.extend([q_str, q_str, q_str, q_str])
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    query += " ORDER BY id DESC"
+
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def get_memory_vault_stats() -> dict:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) as count FROM conversations")
+    total_conversations = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT COUNT(DISTINCT session_id) as count FROM conversations WHERE session_id IS NOT NULL AND session_id != ''")
+    total_sessions = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT COUNT(DISTINCT lead_id) as count FROM conversations WHERE lead_id IS NOT NULL")
+    converted_leads = cursor.fetchone()["count"]
+
+    conn.close()
+
+    return {
+        "total_conversations": total_conversations,
+        "total_sessions": total_sessions,
+        "converted_leads": converted_leads,
+        "retention_days": 60
+    }
+
+
+def purge_old_conversations(days: int = 60) -> int:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cutoff_dt = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff_iso = cutoff_dt.isoformat()
+
+    cursor.execute("DELETE FROM conversations WHERE created_at < ?", (cutoff_iso,))
+    deleted_count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted_count
+
+
+
 
 

@@ -1,3 +1,4 @@
+import json
 import os
 import random
 import re
@@ -24,7 +25,8 @@ from database import (
     get_conversations_by_lead, get_db_connection,
     get_digests, get_digest_by_id, generate_fortnightly_summary,
     add_to_finetune_queue, get_finetune_queue, review_finetune_item,
-    run_finetune_cycle, get_model_versions, rollback_model_version
+    run_finetune_cycle, get_model_versions, rollback_model_version,
+    get_all_conversations, get_memory_vault_stats, purge_old_conversations
 )
 from digest_service import run_fortnightly_digest
 
@@ -521,6 +523,9 @@ async def get_model_versions_endpoint():
         "versions": versions
     }
 
+class PurgeVaultRequest(BaseModel):
+    retention_days: Optional[int] = 60
+
 @app.post("/api/admin/finetune/rollback")
 async def rollback_model_version_endpoint(req: RollbackVersionRequest):
     updated = rollback_model_version(req.version_id)
@@ -531,6 +536,69 @@ async def rollback_model_version_endpoint(req: RollbackVersionRequest):
         "message": f"Successfully rolled back active model to version ID {req.version_id}",
         "version": updated
     }
+
+# Admin Memory Vault Endpoints
+@app.get("/api/admin/memory-vault/conversations")
+async def get_memory_vault_conversations(
+    session_id: Optional[str] = None,
+    lead_id: Optional[int] = None,
+    q: Optional[str] = None
+):
+    conversations = get_all_conversations(session_id=session_id, lead_id=lead_id, search_query=q)
+    return {
+        "status": "success",
+        "conversations": conversations
+    }
+
+@app.get("/api/admin/memory-vault/stats")
+async def get_memory_vault_stats_endpoint():
+    stats = get_memory_vault_stats()
+    return {
+        "status": "success",
+        "stats": stats,
+        "total_conversations": stats["total_conversations"],
+        "total_sessions": stats["total_sessions"],
+        "converted_leads": stats["converted_leads"],
+        "retention_days": stats["retention_days"]
+    }
+
+@app.post("/api/admin/memory-vault/purge")
+async def purge_memory_vault_endpoint(req: Optional[PurgeVaultRequest] = None):
+    days = req.retention_days if req and req.retention_days is not None else 60
+    if days < 0:
+        raise HTTPException(status_code=400, detail="Retention days must be non-negative.")
+    deleted_count = purge_old_conversations(days=days)
+    return {
+        "status": "success",
+        "message": f"Purged conversation records older than {days} days",
+        "deleted_count": deleted_count
+    }
+
+@app.get("/api/admin/memory-vault/export")
+async def export_memory_vault_transcript(
+    session_id: Optional[str] = None,
+    lead_id: Optional[int] = None
+):
+    conversations = get_all_conversations(session_id=session_id, lead_id=lead_id)
+    export_data = {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "filter": {
+            "session_id": session_id,
+            "lead_id": lead_id
+        },
+        "total_turns": len(conversations),
+        "conversations": conversations
+    }
+    content_json = json.dumps(export_data, indent=2)
+    filename = f"transcript_export_{session_id or lead_id or 'all'}.json"
+    return Response(
+        content=content_json,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
+
 
 if __name__ == "__main__":
     import uvicorn
