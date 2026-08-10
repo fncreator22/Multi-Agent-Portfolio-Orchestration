@@ -59,6 +59,16 @@ const SUGGESTED_QUERIES = [
   'Explain computer vision projects',
 ];
 
+const getOrCreateSessionId = (): string => {
+  if (typeof window === 'undefined') return 'session-fallback';
+  let sid = sessionStorage.getItem('portfolio_session_id');
+  if (!sid) {
+    sid = `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    sessionStorage.setItem('portfolio_session_id', sid);
+  }
+  return sid;
+};
+
 export const AgentChatWidget: React.FC = () => {
   const { activeStage, setActiveStage, mode } = useShell();
   const isTerminal = mode === 'terminal';
@@ -69,6 +79,10 @@ export const AgentChatWidget: React.FC = () => {
   const [isQuerying, setIsQuerying] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    getOrCreateSessionId();
+  }, []);
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -131,6 +145,7 @@ export const AgentChatWidget: React.FC = () => {
       const data: AgentQueryResponse = await res.json();
 
       // If gate decision was ESCALATE_LLM, update activeStage to STAGE_3_LLM
+      const finalStage = data.gate_decision === 'ESCALATE_LLM' ? 'STAGE_3_LLM' : 'STAGE_2_GATE';
       if (data.gate_decision === 'ESCALATE_LLM') {
         setActiveStage('STAGE_3_LLM');
         await new Promise((r) => setTimeout(r, 600));
@@ -166,6 +181,21 @@ export const AgentChatWidget: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, agentMsg]);
+
+      // Log conversation turn to broker API
+      const brokerApiBase = import.meta.env.VITE_BROKER_API_URL || 'http://localhost:8001';
+      const sessionId = getOrCreateSessionId();
+      fetch(`${brokerApiBase}/api/conversations/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          visitor_message: sanitized,
+          agent_stage: finalStage,
+          agent_response: responseText,
+          email: null,
+        }),
+      }).catch((logErr) => console.error('Failed to log conversation turn:', logErr));
     } catch (err: any) {
       setActiveStage('IDLE');
       const errorMsg: ChatMessage = {

@@ -19,7 +19,9 @@ import email_service
 from database import (
     init_db, create_lead, get_leads, create_booking, get_bookings,
     save_otp, verify_otp, verify_lead_otp, is_lead_verified,
-    check_otp_rate_limit, get_kb_projects, save_kb_project
+    check_otp_rate_limit, get_kb_projects, save_kb_project,
+    log_conversation_turn, link_session_to_lead, get_conversations_by_session,
+    get_conversations_by_lead, get_db_connection
 )
 
 # Load environment variables
@@ -41,12 +43,16 @@ def validate_email_format(email: str) -> str:
         raise HTTPException(status_code=400, detail="Invalid email address format.")
     return clean_email.lower()
 
+_rate_limit_middleware_instance = None
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, max_requests: int = 50, window_seconds: int = 60):
         super().__init__(app)
         self.max_requests = max_requests
         self.window_seconds = window_seconds
         self.requests = defaultdict(list)
+        global _rate_limit_middleware_instance
+        _rate_limit_middleware_instance = self
 
     async def dispatch(self, request: Request, call_next):
         client_ip = request.client.host if request.client else "127.0.0.1"
@@ -64,6 +70,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests[client_ip].append(now)
         response = await call_next(request)
         return response
+
+def reset_rate_limit_middleware():
+    if _rate_limit_middleware_instance:
+        _rate_limit_middleware_instance.requests.clear()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -106,6 +116,14 @@ class OTPRequestPayload(BaseModel):
 class OTPVerifyPayload(BaseModel):
     email: str
     otp_code: str
+    session_id: Optional[str] = None
+
+class LogTurnRequest(BaseModel):
+    session_id: str
+    visitor_message: str
+    agent_stage: str
+    agent_response: str
+    email: Optional[str] = None
 
 @app.get("/health")
 async def health_check():
@@ -186,9 +204,38 @@ async def create_booking_entry(req: BookingRequest, background_tasks: Background
         "booking": booking
     }
 
+@app.post("/api/conversations/log")
+async def log_conversation_turn_endpoint(req: LogTurnRequest):
+    session_id = req.session_id.strip() if req.session_id else ""
+    visitor_message = strip_html_tags(req.visitor_message or "")
+    agent_stage = strip_html_tags(req.agent_stage or "")
+    agent_response = strip_html_tags(req.agent_response or "")
+    email = req.email.strip().lower() if req.email else None
+
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id is required.")
+    if not visitor_message:
+        raise HTTPException(status_code=400, detail="visitor_message is required.")
+
+    turn = log_conversation_turn(
+        session_id=session_id,
+        visitor_message=visitor_message,
+        agent_stage=agent_stage,
+        agent_response=agent_response,
+        email=email
+    )
+
+    return {
+        "status": "success",
+        "message": "Conversation turn logged successfully",
+        "turn": turn
+    }
+
 @app.get("/api/leads")
 async def list_leads():
     leads = get_leads()
+    for lead in leads:
+        lead["conversations"] = get_conversations_by_lead(lead["id"])
     return {
         "status": "success",
         "leads": leads
@@ -235,10 +282,22 @@ async def verify_lead_otp_endpoint(req: OTPVerifyPayload):
     if not is_valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP code.")
     
+    # Retrieve verified lead record to get its ID
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM leads WHERE LOWER(email) = LOWER(?) ORDER BY id DESC LIMIT 1", (email,))
+    row = cursor.fetchone()
+    lead_id = row["id"] if row else None
+    conn.close()
+
+    if lead_id:
+        link_session_to_lead(req.session_id or "", lead_id, email)
+
     return {
         "status": "success",
         "message": "Lead email verified successfully",
-        "email": email
+        "email": email,
+        "lead_id": lead_id
     }
 
 # Admin OTP Auth Endpoints

@@ -2,6 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+interface ConversationTurn {
+  id: number;
+  session_id: string;
+  lead_id?: number;
+  email?: string;
+  visitor_message: string;
+  agent_stage: string;
+  agent_response: string;
+  created_at: string;
+}
+
 interface Lead {
   id: number;
   email: string;
@@ -10,6 +21,7 @@ interface Lead {
   project_slug?: string;
   created_at: string;
   status: string;
+  conversations?: ConversationTurn[];
 }
 
 interface Booking {
@@ -30,6 +42,14 @@ export const LeadsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'leads' | 'bookings'>('leads');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedLeadIds, setExpandedLeadIds] = useState<Record<number, boolean>>({});
+
+  const toggleExpand = (leadId: number) => {
+    setExpandedLeadIds((prev) => ({
+      ...prev,
+      [leadId]: !prev[leadId],
+    }));
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -177,37 +197,102 @@ export const LeadsDashboard: React.FC = () => {
                       <th className="py-3 px-4">Project Interest</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4">Message</th>
+                      <th className="py-3 px-4">Actions / History</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-text-muted/10 text-sm">
-                    {leads.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-text-muted/5 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-semibold text-text-primary">{lead.name}</div>
-                          <div className="text-xs font-mono text-text-muted">{lead.email}</div>
-                        </td>
-                        <td className="py-3 px-4 font-mono text-xs text-text-muted whitespace-nowrap">
-                          {formatDate(lead.created_at)}
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          {lead.project_slug ? (
-                            <span className="px-2.5 py-1 rounded bg-accent-primary/10 border border-accent-primary/30 text-accent-primary font-mono text-xs">
-                              {lead.project_slug}
-                            </span>
-                          ) : (
-                            <span className="text-text-muted text-xs font-mono">General</span>
+                    {leads.map((lead) => {
+                      const isExpanded = !!expandedLeadIds[lead.id];
+                      const turnCount = lead.conversations?.length || 0;
+                      return (
+                        <React.Fragment key={lead.id}>
+                          <tr className="hover:bg-text-muted/5 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="font-semibold text-text-primary">{lead.name}</div>
+                              <div className="text-xs font-mono text-text-muted">{lead.email}</div>
+                            </td>
+                            <td className="py-3 px-4 font-mono text-xs text-text-muted whitespace-nowrap">
+                              {formatDate(lead.created_at)}
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              {lead.project_slug ? (
+                                <span className="px-2.5 py-1 rounded bg-accent-primary/10 border border-accent-primary/30 text-accent-primary font-mono text-xs">
+                                  {lead.project_slug}
+                                </span>
+                              ) : (
+                                <span className="text-text-muted text-xs font-mono">General</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span className="px-2 py-0.5 rounded text-xs font-mono bg-accent-primary/20 text-accent-primary uppercase tracking-wider">
+                                {lead.status || 'new'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-text-muted max-w-xs truncate">
+                              {lead.message}
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <button
+                                onClick={() => toggleExpand(lead.id)}
+                                className={`px-3 py-1 rounded border text-xs font-mono transition-colors ${
+                                  isExpanded
+                                    ? 'bg-accent-primary text-bg-base border-accent-primary font-bold'
+                                    : 'border-accent-primary/30 text-accent-primary hover:bg-accent-primary/10'
+                                }`}
+                              >
+                                💬 Transcript ({turnCount}) {isExpanded ? '▲' : '▼'}
+                              </button>
+                            </td>
+                          </tr>
+
+                          {/* Expandable Conversation Transcript Drawer */}
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={6} className="bg-text-muted/5 p-4 border-b border-text-muted/20">
+                                <div className="space-y-3 font-mono text-xs max-h-96 overflow-y-auto pr-2">
+                                  <div className="flex items-center justify-between pb-2 border-b border-accent-primary/20 text-accent-primary font-bold">
+                                    <span>📜 Agent Conversation History (Lead #{lead.id})</span>
+                                    <span>{turnCount} turn(s) recorded</span>
+                                  </div>
+
+                                  {turnCount === 0 ? (
+                                    <div className="py-4 text-center text-text-muted italic">
+                                      No agent conversation history recorded for this lead.
+                                    </div>
+                                  ) : (
+                                    lead.conversations?.map((turn, idx) => (
+                                      <div
+                                        key={turn.id || idx}
+                                        className="p-3 rounded-lg border border-accent-primary/20 bg-bg-base/90 space-y-2"
+                                      >
+                                        <div className="flex items-center justify-between text-[10px] text-text-muted">
+                                          <div className="flex items-center gap-2">
+                                            <span className="px-1.5 py-0.5 rounded bg-accent-primary/10 border border-accent-primary/30 text-accent-primary">
+                                              STAGE: {turn.agent_stage}
+                                            </span>
+                                            <span>Session: {turn.session_id}</span>
+                                          </div>
+                                          <span>{formatDate(turn.created_at)}</span>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                          <div className="text-text-primary font-semibold">
+                                            <span className="text-accent-primary">👤 Visitor:</span> {turn.visitor_message}
+                                          </div>
+                                          <div className="text-text-muted whitespace-pre-wrap pl-4 border-l-2 border-accent-primary/30">
+                                            <span className="text-accent-primary font-semibold">🤖 Agent:</span> {turn.agent_response}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
                           )}
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded text-xs font-mono bg-accent-primary/20 text-accent-primary uppercase tracking-wider">
-                            {lead.status || 'new'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-text-muted max-w-md truncate">
-                          {lead.message}
-                        </td>
-                      </tr>
-                    ))}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -405,6 +405,19 @@ def init_db():
             case_study TEXT NOT NULL
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            lead_id INTEGER,
+            email TEXT,
+            visitor_message TEXT NOT NULL,
+            agent_stage TEXT NOT NULL,
+            agent_response TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
     
     conn.commit()
 
@@ -623,4 +636,126 @@ def get_bookings() -> list:
     conn.close()
     
     return [dict(row) for row in rows]
+
+
+def log_conversation_turn(
+    session_id: str,
+    visitor_message: str,
+    agent_stage: str,
+    agent_response: str,
+    email: Optional[str] = None
+) -> dict:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    created_at = datetime.now(timezone.utc).isoformat()
+    
+    lead_id = None
+    if email:
+        cursor.execute("SELECT id FROM leads WHERE LOWER(email) = LOWER(?) ORDER BY id DESC LIMIT 1", (email,))
+        row = cursor.fetchone()
+        if row:
+            lead_id = row["id"]
+    else:
+        # If no email passed, try looking up from existing linked turn in this session
+        cursor.execute(
+            "SELECT lead_id, email FROM conversations WHERE session_id = ? AND (lead_id IS NOT NULL OR email IS NOT NULL) ORDER BY id DESC LIMIT 1",
+            (session_id,)
+        )
+        row = cursor.fetchone()
+        if row:
+            if row["lead_id"]:
+                lead_id = row["lead_id"]
+            if row["email"]:
+                email = row["email"]
+
+    cursor.execute(
+        """
+        INSERT INTO conversations (session_id, lead_id, email, visitor_message, agent_stage, agent_response, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (session_id, lead_id, email, visitor_message, agent_stage, agent_response, created_at)
+    )
+    conn.commit()
+    turn_id = cursor.lastrowid
+    conn.close()
+
+    return {
+        "id": turn_id,
+        "session_id": session_id,
+        "lead_id": lead_id,
+        "email": email,
+        "visitor_message": visitor_message,
+        "agent_stage": agent_stage,
+        "agent_response": agent_response,
+        "created_at": created_at
+    }
+
+
+def link_session_to_lead(session_id: str, lead_id: int, email: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    clean_email = email.strip().lower() if email else ""
+    if session_id and clean_email:
+        cursor.execute(
+            "UPDATE conversations SET lead_id = ?, email = ? WHERE session_id = ? OR LOWER(email) = LOWER(?)",
+            (lead_id, clean_email, session_id, clean_email)
+        )
+    elif session_id:
+        cursor.execute(
+            "UPDATE conversations SET lead_id = ?, email = ? WHERE session_id = ?",
+            (lead_id, clean_email, session_id)
+        )
+    elif clean_email:
+        cursor.execute(
+            "UPDATE conversations SET lead_id = ?, email = ? WHERE LOWER(email) = LOWER(?)",
+            (lead_id, clean_email, clean_email)
+        )
+    conn.commit()
+    conn.close()
+
+
+def get_conversations_by_session(session_id: str) -> list:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, session_id, lead_id, email, visitor_message, agent_stage, agent_response, created_at FROM conversations WHERE session_id = ? ORDER BY id ASC",
+        (session_id,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def get_conversations_by_lead(lead_id: int) -> list:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Also fetch lead email to catch turns matching lead's email
+    cursor.execute("SELECT email FROM leads WHERE id = ?", (lead_id,))
+    lead_row = cursor.fetchone()
+    lead_email = lead_row["email"].lower() if lead_row and lead_row["email"] else None
+
+    if lead_email:
+        cursor.execute(
+            """
+            SELECT id, session_id, lead_id, email, visitor_message, agent_stage, agent_response, created_at
+            FROM conversations
+            WHERE lead_id = ? OR LOWER(email) = LOWER(?)
+            ORDER BY id ASC
+            """,
+            (lead_id, lead_email)
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT id, session_id, lead_id, email, visitor_message, agent_stage, agent_response, created_at
+            FROM conversations
+            WHERE lead_id = ?
+            ORDER BY id ASC
+            """,
+            (lead_id,)
+        )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 
