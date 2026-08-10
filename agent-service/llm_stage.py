@@ -10,7 +10,14 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+def get_ollama_base_url() -> str:
+    url = os.getenv("OLLAMA_HOST") or os.getenv("OLLAMA_BASE_URL") or "http://localhost:11434"
+    url = url.strip()
+    if not (url.startswith("http://") or url.startswith("https://")):
+        url = f"http://{url}"
+    return url.rstrip("/")
+
+OLLAMA_BASE_URL = get_ollama_base_url()
 OLLAMA_LLM_MODEL = os.getenv("OLLAMA_LLM_MODEL", "llama3.2:3b")
 
 STOP_WORDS = {
@@ -79,11 +86,59 @@ class LLMEscalationStage:
 
     def __init__(self, model_name: Optional[str] = None, base_url: Optional[str] = None, timeout: float = 5.0):
         self.model_name = model_name or os.getenv("OLLAMA_LLM_MODEL", "llama3.2:3b")
-        self.base_url = (base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")).rstrip("/")
+        env_url = get_ollama_base_url()
+        raw_url = base_url or env_url
+        if not (raw_url.startswith("http://") or raw_url.startswith("https://")):
+            raw_url = f"http://{raw_url}"
+        self.base_url = raw_url.rstrip("/")
         self.timeout = timeout
         self.log_dir = os.path.join(os.path.dirname(__file__), "logs")
         os.makedirs(self.log_dir, exist_ok=True)
         self.log_file = os.path.join(self.log_dir, "stage3.log")
+
+    def check_slm_health(self, timeout: float = 2.0) -> Dict[str, Any]:
+        """
+        Performs a fast health check GET against configured OLLAMA_BASE_URL/api/tags or /api/version
+        with timeout. Returns dict:
+        {"status": "online" | "offline", "base_url": url, "model": model_name, "latency_ms": float, "details": str}
+        """
+        import time
+        start_time = time.time()
+        url = f"{self.base_url}/api/tags"
+        try:
+            res = requests.get(url, timeout=timeout)
+            latency_ms = round((time.time() - start_time) * 1000, 2)
+            if res.status_code == 200:
+                data = res.json()
+                models = [m.get("name") for m in data.get("models", [])] if isinstance(data.get("models"), list) else []
+                if self.model_name in models or any(self.model_name in m for m in models):
+                    details = f"Ollama service online. Model '{self.model_name}' available."
+                else:
+                    details = f"Ollama service online."
+                return {
+                    "status": "online",
+                    "base_url": self.base_url,
+                    "model": self.model_name,
+                    "latency_ms": latency_ms,
+                    "details": details
+                }
+            else:
+                return {
+                    "status": "offline",
+                    "base_url": self.base_url,
+                    "model": self.model_name,
+                    "latency_ms": latency_ms,
+                    "details": f"HTTP {res.status_code}: {res.text[:100]}"
+                }
+        except Exception as e:
+            latency_ms = round((time.time() - start_time) * 1000, 2)
+            return {
+                "status": "offline",
+                "base_url": self.base_url,
+                "model": self.model_name,
+                "latency_ms": latency_ms,
+                "details": f"Health check failed: {str(e)}"
+            }
 
     def log_event(self, query: str, response_text: str, grounding_score: float, grounding_verified: bool, status: str):
         timestamp = datetime.now(timezone.utc).isoformat()
@@ -242,3 +297,10 @@ def escalate_and_generate(query: str, retrieved_context: list) -> dict:
     """Module-level helper function for LLM escalation & generation."""
     stage = LLMEscalationStage()
     return stage.escalate_and_generate(query, retrieved_context)
+
+
+def check_slm_health(timeout: float = 2.0) -> dict:
+    """Module-level helper function for SLM health check."""
+    stage = LLMEscalationStage()
+    return stage.check_slm_health(timeout=timeout)
+

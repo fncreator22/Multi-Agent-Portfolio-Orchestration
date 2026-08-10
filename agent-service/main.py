@@ -139,13 +139,30 @@ class AgentQueryResponse(BaseModel):
     active_stage: str = "STAGE 3 LLM ESCALATION & GROUNDING READY"
 
 
+class SLMHealthResponse(BaseModel):
+    status: str
+    base_url: str
+    model: str
+    latency_ms: float
+    details: str
+
+
 @app.get("/health")
 def health():
-    """Health check endpoint returning service status and active pipeline stage."""
+    """Health check endpoint returning service status, active pipeline stage, and SLM health."""
+    slm_status = llm_stage.check_slm_health()
     return {
         "status": "healthy",
-        "stage": "STAGE 3 LLM ESCALATION & GROUNDING READY"
+        "stage": "STAGE 3 LLM ESCALATION & GROUNDING READY",
+        "slm": slm_status
     }
+
+
+@app.get("/api/slm/health", response_model=SLMHealthResponse)
+def slm_health():
+    """Dedicated SLM health check endpoint for Phase 6 admin monitoring console."""
+    return llm_stage.check_slm_health()
+
 
 
 

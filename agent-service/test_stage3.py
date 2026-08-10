@@ -77,12 +77,14 @@ class TestStage3LLMEscalation(unittest.TestCase):
         self.assertEqual(result["status"], "UNGROUNDED_FALLBACK")
 
     def test_05_health_endpoint(self):
-        """Verify /health endpoint returns STAGE 3 LLM ESCALATION & GROUNDING READY."""
+        """Verify /health endpoint returns STAGE 3 LLM ESCALATION & GROUNDING READY and slm status."""
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["status"], "healthy")
         self.assertEqual(data["stage"], "STAGE 3 LLM ESCALATION & GROUNDING READY")
+        self.assertIn("slm", data)
+        self.assertIn("status", data["slm"])
 
     @patch("main.classifier.predict")
     def test_06_api_query_end_to_end_retrieval_only(self, mock_predict):
@@ -122,6 +124,57 @@ class TestStage3LLMEscalation(unittest.TestCase):
         self.assertIsInstance(data.get("grounding_verified"), bool)
         self.assertEqual(data["active_stage"], "STAGE 3 LLM ESCALATION & GROUNDING READY")
 
+    @patch("requests.get")
+    def test_08_check_slm_health_online(self, mock_get):
+        """Verify check_slm_health method returns online dictionary when Ollama is reachable."""
+        mock_res = MagicMock()
+        mock_res.status_code = 200
+        mock_res.json.return_value = {"models": [{"name": "llama3.2:3b"}]}
+        mock_get.return_value = mock_res
+
+        stage = LLMEscalationStage(model_name="llama3.2:3b", base_url="http://localhost:11434")
+        health_info = stage.check_slm_health(timeout=1.0)
+
+        self.assertEqual(health_info["status"], "online")
+        self.assertEqual(health_info["base_url"], "http://localhost:11434")
+        self.assertEqual(health_info["model"], "llama3.2:3b")
+        self.assertIsInstance(health_info["latency_ms"], float)
+        self.assertIn("details", health_info)
+
+    def test_09_check_slm_health_offline(self):
+        """Verify check_slm_health method returns offline dictionary when host is unreachable."""
+        stage = LLMEscalationStage(model_name="llama3.2:3b", base_url="http://127.0.0.1:59999")
+        health_info = stage.check_slm_health(timeout=0.1)
+
+        self.assertEqual(health_info["status"], "offline")
+        self.assertEqual(health_info["base_url"], "http://127.0.0.1:59999")
+        self.assertEqual(health_info["model"], "llama3.2:3b")
+        self.assertIsInstance(health_info["latency_ms"], float)
+        self.assertIn("details", health_info)
+
+    def test_10_api_slm_health_endpoint(self):
+        """Verify dedicated GET /api/slm/health endpoint."""
+        response = self.client.get("/api/slm/health")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("status", data)
+        self.assertIn(data["status"], ["online", "offline"])
+        self.assertIn("base_url", data)
+        self.assertIn("model", data)
+        self.assertIn("latency_ms", data)
+        self.assertIn("details", data)
+
+    def test_11_env_url_configuration(self):
+        """Verify LLMEscalationStage configures host via OLLAMA_HOST or OLLAMA_BASE_URL env vars."""
+        with patch.dict(os.environ, {"OLLAMA_HOST": "192.168.1.50:11434"}, clear=False):
+            stage = LLMEscalationStage()
+            self.assertEqual(stage.base_url, "http://192.168.1.50:11434")
+
+        with patch.dict(os.environ, {"OLLAMA_HOST": "", "OLLAMA_BASE_URL": "http://ollama-server:11434"}, clear=False):
+            stage = LLMEscalationStage()
+            self.assertEqual(stage.base_url, "http://ollama-server:11434")
+
 
 if __name__ == "__main__":
     unittest.main()
+

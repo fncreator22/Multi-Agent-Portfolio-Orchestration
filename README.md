@@ -74,6 +74,39 @@ Both Cinematic and Terminal shell modes share the exact same design language and
 
 ---
 
+## 🖥️ Server-Hosted SLM Endpoint Requirements
+
+The Agent Service supports executing Small Language Models (SLMs) such as `llama3.2:3b` via a server-hosted Ollama endpoint for Stage 3 LLM escalation.
+
+### 1. Host Server Configuration
+To run Ollama on a dedicated persistent server or GPU node accessible over the local network or cloud VPC:
+- Configure Ollama to listen on all network interfaces by setting `OLLAMA_HOST=0.0.0.0:11434`.
+- Pull the required SLM and embedding models on the host server:
+  ```bash
+  ollama pull llama3.2:3b
+  ollama pull nomic-embed-text
+  ```
+
+### 2. Agent Service Connection (`/agent-service`)
+Configure the target host URL in `agent-service/.env` via `OLLAMA_HOST` or `OLLAMA_BASE_URL`:
+```env
+OLLAMA_HOST=http://<SERVER_IP>:11434
+OLLAMA_BASE_URL=http://<SERVER_IP>:11434
+OLLAMA_LLM_MODEL=llama3.2:3b
+```
+
+### 3. Network Reachability & Health Check Endpoints
+The agent service continuously monitors SLM health with a fast 2.0s timeout:
+- **`GET /api/slm/health`**: Returns detailed SLM status (`online` | `offline`), host base URL, model name, response latency in milliseconds, and status details for the Phase 6 admin console.
+- **`GET /health`**: Aggregates core agent service health alongside `slm` health data.
+
+### 4. Automatic Fallback Behavior
+If the remote Ollama server is offline, unreachable, or returns an ungrounded response:
+- The system automatically triggers deterministic fallback summaries (`[FALLBACK: LOCAL_LLM_UNAVAILABLE]` / `[FALLBACK: UNGROUNDED_LLM_RESPONSE]`).
+- Zero query failures or HTTP 500 errors occur when the SLM host server is restarting or undergoing maintenance.
+
+---
+
 ## 🛠️ Quick Start & Installation
 
 ### Prerequisites
