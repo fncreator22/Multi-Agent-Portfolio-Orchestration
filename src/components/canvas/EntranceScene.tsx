@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useShell } from '../../context/ShellContext';
 
 interface Particle {
   x: number;
@@ -15,7 +14,6 @@ interface Particle {
 }
 
 export const EntranceScene: React.FC = () => {
-  const { mode } = useShell();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   
@@ -31,11 +29,6 @@ export const EntranceScene: React.FC = () => {
   const animFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(Date.now());
   const hasPlayedRef = useRef<boolean>(false);
-
-  // Return null if in terminal mode as per specification
-  if (mode === 'terminal') {
-    return null;
-  }
 
   const initParticles = (width: number, height: number) => {
     const numParticles = Math.min(100, Math.floor((width * height) / 8000));
@@ -256,7 +249,7 @@ export const EntranceScene: React.FC = () => {
         cancelAnimationFrame(animFrameRef.current);
       }
     };
-  }, [mode]);
+  }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;

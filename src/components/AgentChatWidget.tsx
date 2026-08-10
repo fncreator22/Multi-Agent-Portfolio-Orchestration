@@ -70,8 +70,7 @@ const getOrCreateSessionId = (): string => {
 };
 
 export const AgentChatWidget: React.FC = () => {
-  const { activeStage, setActiveStage, mode } = useShell();
-  const isTerminal = mode === 'terminal';
+  const { activeStage, setActiveStage } = useShell();
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
@@ -228,9 +227,7 @@ export const AgentChatWidget: React.FC = () => {
       {/* Floating Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full border border-accent-primary/40 bg-bg-base/90 text-accent-primary shadow-xl hover:border-accent-primary hover:bg-accent-primary/10 transition-all duration-300 ${
-          isTerminal ? 'font-mono' : 'font-display'
-        }`}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full border border-accent-primary/40 bg-bg-base/90 text-accent-primary shadow-xl hover:border-accent-primary hover:bg-accent-primary/10 transition-all duration-300 font-display"
         aria-label="Toggle Agent Chat"
       >
         <span className="relative flex h-3 w-3">
@@ -252,16 +249,12 @@ export const AgentChatWidget: React.FC = () => {
 
       {/* Floating Chat Panel */}
       {isOpen && (
-        <div
-          className={`fixed bottom-20 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[560px] max-h-[85vh] flex flex-col border border-accent-primary/30 bg-bg-base/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
-            isTerminal ? 'font-mono' : ''
-          }`}
-        >
+        <div className="fixed bottom-20 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[560px] max-h-[85vh] flex flex-col border border-accent-primary/30 bg-bg-base/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden transition-all duration-300">
           {/* Header */}
           <div className="flex items-center justify-between p-3.5 border-b border-accent-primary/20 bg-bg-base/80">
             <div className="flex items-center gap-2.5">
               <span className="text-accent-primary font-bold text-sm">
-                {isTerminal ? '$ agent --chat' : 'Guardian RAG Agent'}
+                Guardian RAG Agent
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded border border-accent-primary/30 text-accent-primary bg-accent-primary/10 font-mono">
                 v1.0.0
