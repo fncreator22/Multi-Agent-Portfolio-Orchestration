@@ -9,12 +9,13 @@ from collections import defaultdict
 from typing import Optional, Any, Union
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
+import email_service
 from database import (
     init_db, create_lead, get_leads, create_booking, get_bookings,
     save_otp, verify_otp, get_kb_projects, save_kb_project
@@ -114,7 +115,7 @@ async def health_check():
     }
 
 @app.post("/api/contact")
-async def submit_contact(req: ContactRequest):
+async def submit_contact(req: ContactRequest, background_tasks: BackgroundTasks):
     email = validate_email_format(req.email)
     name = strip_html_tags(req.name)
     message = strip_html_tags(req.message)
@@ -131,6 +132,8 @@ async def submit_contact(req: ContactRequest):
         message=message,
         project_slug=project_slug
     )
+
+    background_tasks.add_task(email_service.send_lead_notification, lead)
 
     return {
         "status": "success",
@@ -153,7 +156,7 @@ async def get_booking_slots():
     }
 
 @app.post("/api/booking")
-async def create_booking_entry(req: BookingRequest):
+async def create_booking_entry(req: BookingRequest, background_tasks: BackgroundTasks):
     email = validate_email_format(req.email)
     slot_time = strip_html_tags(req.slot_time)
 
@@ -167,6 +170,8 @@ async def create_booking_entry(req: BookingRequest):
         slot_time=slot_time,
         meeting_link=meeting_link
     )
+
+    background_tasks.add_task(email_service.send_booking_notification, booking)
 
     return {
         "status": "success",
@@ -197,6 +202,7 @@ async def request_otp(req: OTPRequestPayload):
     otp_code = f"{random.randint(100000, 999999)}"
     expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
     save_otp(email, otp_code, expires_at)
+    email_service.send_otp_email(email, otp_code)
     return {
         "status": "success",
         "message": "OTP code generated and sent to email",
