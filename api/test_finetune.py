@@ -158,5 +158,22 @@ class TestSLMFineTuneSystem(unittest.TestCase):
         self.assertEqual(status_res.status_code, 200)
         self.assertEqual(status_res.json()["active_model_version"], "llama3.2:3b-v1.0")
 
+    def test_05_admin_slm_status_endpoint(self):
+        res = self.client.get("/api/admin/slm/status")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["status"], "success")
+        self.assertIn("reachability", data)
+        self.assertIn(data["reachability"], ["ONLINE", "OFFLINE"])
+        self.assertIn("base_url", data)
+        self.assertIn("model", data)
+        self.assertIn("latency_ms", data)
+        self.assertIn("active_model_version", data)
+        self.assertIn("last_finetune_date", data)
+        self.assertIn("pending_queue_count", data)
+        self.assertIn("dataset_size", data)
+        self.assertIn("slm_health", data)
+        self.assertIn("finetune_stats", data)
+
 if __name__ == "__main__":
     unittest.main()

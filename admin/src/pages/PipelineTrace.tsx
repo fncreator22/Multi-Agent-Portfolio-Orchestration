@@ -15,6 +15,7 @@ import {
   Clock,
   Filter
 } from 'lucide-react';
+import { SLMStatusPanel } from '../components/SLMStatusPanel';
 
 export interface TraceItem {
   query: string;
@@ -139,6 +140,9 @@ export const PipelineTrace: React.FC = () => {
           <span>{error}</span>
         </div>
       )}
+
+      {/* SLM Model Monitoring Panel */}
+      <SLMStatusPanel />
 
       {/* Telemetry Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">

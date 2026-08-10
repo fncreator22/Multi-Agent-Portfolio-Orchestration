@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
+import requests
 
 import email_service
 from database import (
@@ -513,6 +514,110 @@ async def get_finetune_status_endpoint():
         "dataset_size": dataset_size,
         "active_model_version": active_model_version,
         "pending_queue_count": pending_queue_count
+    }
+
+def check_slm_health_aggregated():
+    agent_service_url = os.getenv("AGENT_SERVICE_URL", "http://localhost:8000").rstrip("/")
+    start_time = time.time()
+    slm_health = {
+        "reachability": "OFFLINE",
+        "base_url": "http://localhost:11434",
+        "model": os.getenv("OLLAMA_LLM_MODEL", "llama3.2:3b"),
+        "latency_ms": 0.0,
+        "details": "Agent service offline"
+    }
+
+    try:
+        res = requests.get(f"{agent_service_url}/api/slm/health", timeout=2.0)
+        if res.status_code == 200:
+            data = res.json()
+            raw_status = str(data.get("status", "offline")).lower()
+            slm_health["reachability"] = "ONLINE" if raw_status in ["online", "healthy", "ok"] else "OFFLINE"
+            slm_health["base_url"] = data.get("base_url", slm_health["base_url"])
+            slm_health["model"] = data.get("model", slm_health["model"])
+            slm_health["latency_ms"] = float(data.get("latency_ms", round((time.time() - start_time) * 1000, 2)))
+            slm_health["details"] = data.get("details", "SLM service operational")
+            return slm_health
+    except Exception:
+        pass
+
+    # Fallback direct check to Ollama service
+    ollama_url = os.getenv("OLLAMA_HOST") or os.getenv("OLLAMA_BASE_URL") or "http://localhost:11434"
+    if not (ollama_url.startswith("http://") or ollama_url.startswith("https://")):
+        ollama_url = f"http://{ollama_url}"
+    ollama_url = ollama_url.rstrip("/")
+    slm_health["base_url"] = ollama_url
+
+    start_ollama = time.time()
+    try:
+        res = requests.get(f"{ollama_url}/api/tags", timeout=2.0)
+        latency = round((time.time() - start_ollama) * 1000, 2)
+        if res.status_code == 200:
+            data = res.json()
+            models = [m.get("name") for m in data.get("models", [])] if isinstance(data.get("models"), list) else []
+            model_name = slm_health["model"]
+            if model_name in models or any(model_name in m for m in models):
+                slm_health["details"] = f"Ollama service online. Model '{model_name}' available."
+            else:
+                slm_health["details"] = "Ollama service online."
+            slm_health["reachability"] = "ONLINE"
+            slm_health["latency_ms"] = latency
+        else:
+            slm_health["reachability"] = "OFFLINE"
+            slm_health["latency_ms"] = latency
+            slm_health["details"] = f"Ollama HTTP {res.status_code}"
+    except Exception as e:
+        latency = round((time.time() - start_ollama) * 1000, 2)
+        slm_health["reachability"] = "OFFLINE"
+        slm_health["latency_ms"] = latency
+        slm_health["details"] = f"Direct check failed: {str(e)}"
+
+    return slm_health
+
+@app.get("/api/admin/slm/status")
+async def get_admin_slm_status():
+    slm = check_slm_health_aggregated()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) as count FROM finetune_queue WHERE status = 'pending'")
+    pending_queue_count = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT COUNT(*) as count FROM finetune_queue WHERE status = 'approved'")
+    approved_dataset_size = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT version_tag, dataset_size, created_at FROM model_versions WHERE is_active = 1 LIMIT 1")
+    active_version_row = cursor.fetchone()
+
+    if active_version_row:
+        active_model_version = active_version_row["version_tag"]
+        last_finetune_date = active_version_row["created_at"]
+        dataset_size = active_version_row["dataset_size"]
+    else:
+        active_model_version = None
+        last_finetune_date = None
+        dataset_size = approved_dataset_size
+
+    conn.close()
+
+    return {
+        "status": "success",
+        "reachability": slm["reachability"],
+        "base_url": slm["base_url"],
+        "model": slm["model"],
+        "latency_ms": slm["latency_ms"],
+        "details": slm["details"],
+        "active_model_version": active_model_version,
+        "last_finetune_date": last_finetune_date,
+        "pending_queue_count": pending_queue_count,
+        "dataset_size": dataset_size,
+        "slm_health": slm,
+        "finetune_stats": {
+            "active_model_version": active_model_version,
+            "last_finetune_date": last_finetune_date,
+            "pending_queue_count": pending_queue_count,
+            "dataset_size": dataset_size
+        }
     }
 
 @app.get("/api/admin/finetune/versions")
