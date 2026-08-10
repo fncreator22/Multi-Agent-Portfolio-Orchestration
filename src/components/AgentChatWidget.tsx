@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FileText, Bot, X, Send, Sparkles } from 'lucide-react';
 import { useShell } from '../context/ShellContext';
 import { GuardianVisualizer } from './canvas/GuardianVisualizer';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 interface RetrievedDoc {
   id: string;
@@ -72,6 +73,7 @@ const getOrCreateSessionId = (): string => {
 
 export const AgentChatWidget: React.FC = () => {
   const { activeStage, setActiveStage } = useShell();
+  const panelReveal = useScrollReveal<HTMLDivElement>();
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
@@ -79,6 +81,7 @@ export const AgentChatWidget: React.FC = () => {
   const [isQuerying, setIsQuerying] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+
 
   useEffect(() => {
     getOrCreateSessionId();
@@ -250,7 +253,12 @@ export const AgentChatWidget: React.FC = () => {
 
       {/* Floating Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-20 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[560px] max-h-[85vh] flex flex-col bg-panel backdrop-blur-md shadow-soft rounded-lg border border-accent-primary/30 overflow-hidden transition-all duration-300 font-display">
+        <div
+          ref={panelReveal.ref}
+          className={`fixed bottom-20 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[560px] max-h-[85vh] flex flex-col bg-panel backdrop-blur-md shadow-soft rounded-lg border border-accent-primary/30 overflow-hidden transition-all duration-300 font-display reveal-element ${
+            panelReveal.isVisible || isOpen ? 'is-visible' : ''
+          }`}
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-3.5 border-b border-accent-primary/20 bg-bg-base/80">
             <div className="flex items-center gap-2.5">

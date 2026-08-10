@@ -14,8 +14,13 @@ import {
 } from 'lucide-react';
 import { BIO_DATA } from '../constants/bio';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 export const Contact: React.FC = () => {
+  const headerReveal = useScrollReveal<HTMLElement>();
+  const formReveal = useScrollReveal<HTMLElement>();
+  const bookingReveal = useScrollReveal<HTMLElement>();
+
   // Contact Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -112,7 +117,12 @@ export const Contact: React.FC = () => {
         <Breadcrumbs />
 
         {/* Page Header */}
-        <header className="bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-4">
+        <header
+          ref={headerReveal.ref}
+          className={`bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-4 reveal-element ${
+            headerReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent-primary/30 bg-accent-primary/10 text-xs font-mono text-accent-primary">
             <Mail className="w-3.5 h-3.5" />
             <span>Consultation & Outreach</span>
@@ -127,7 +137,12 @@ export const Contact: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Form Container */}
-          <section className="bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6">
+          <section
+            ref={formReveal.ref}
+            className={`bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6 reveal-element ${
+              formReveal.isVisible ? 'is-visible' : ''
+            } stagger-1`}
+          >
             <div className="flex items-center gap-3 border-b border-accent-primary/20 pb-4">
               <MessageSquare className="w-5 h-5 text-accent-primary" />
               <div>
@@ -228,7 +243,12 @@ export const Contact: React.FC = () => {
           </section>
 
           {/* Calendar Slot Booking Widget */}
-          <section className="bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6 flex flex-col justify-between">
+          <section
+            ref={bookingReveal.ref}
+            className={`bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6 flex flex-col justify-between reveal-element ${
+              bookingReveal.isVisible ? 'is-visible' : ''
+            } stagger-2`}
+          >
             <div className="space-y-6">
               <div className="flex items-center gap-3 border-b border-accent-primary/20 pb-4">
                 <Calendar className="w-5 h-5 text-accent-warn" />

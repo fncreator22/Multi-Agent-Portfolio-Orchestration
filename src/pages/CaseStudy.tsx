@@ -13,9 +13,16 @@ import {
 } from 'lucide-react';
 import { PROJECTS } from '../constants/projects';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 export const CaseStudy: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+
+  const heroReveal = useScrollReveal<HTMLElement>();
+  const overviewReveal = useScrollReveal<HTMLElement>();
+  const challengeReveal = useScrollReveal<HTMLDivElement>();
+  const archReveal = useScrollReveal<HTMLElement>();
+  const metricsReveal = useScrollReveal<HTMLElement>();
 
   const project = PROJECTS.find((p) => p.slug === slug);
 
@@ -56,7 +63,12 @@ export const CaseStudy: React.FC = () => {
         <Breadcrumbs />
 
         {/* Hero Card Container */}
-        <header className="bg-panel backdrop-blur shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6">
+        <header
+          ref={heroReveal.ref}
+          className={`bg-panel backdrop-blur shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6 reveal-element ${
+            heroReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs font-mono px-3 py-1 rounded-full border border-accent-primary/30 text-accent-primary bg-accent-primary/10">
               {category}
@@ -122,7 +134,12 @@ export const CaseStudy: React.FC = () => {
         {/* Case Study Detailed Body */}
         <main className="space-y-8">
           {/* Overview Container */}
-          <section className="bg-panel backdrop-blur shadow-soft rounded-lg p-6 md:p-8 border border-accent-primary/20 space-y-4">
+          <section
+            ref={overviewReveal.ref}
+            className={`bg-panel backdrop-blur shadow-soft rounded-lg p-6 md:p-8 border border-accent-primary/20 space-y-4 reveal-element ${
+              overviewReveal.isVisible ? 'is-visible' : ''
+            }`}
+          >
             <div className="flex items-center gap-2.5 text-accent-primary">
               <Terminal className="w-5 h-5" />
               <h2 className="text-xl font-bold text-text-primary">Executive Summary & Overview</h2>
@@ -133,8 +150,15 @@ export const CaseStudy: React.FC = () => {
           </section>
 
           {/* Problem & Solution Grid */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <section className="bg-panel backdrop-blur shadow-soft rounded-lg p-6 border border-accent-warn/30 space-y-3">
+          <div
+            ref={challengeReveal.ref}
+            className="grid md:grid-cols-2 gap-6"
+          >
+            <section
+              className={`bg-panel backdrop-blur shadow-soft rounded-lg p-6 border border-accent-warn/30 space-y-3 reveal-element ${
+                challengeReveal.isVisible ? 'is-visible' : ''
+              } stagger-1`}
+            >
               <div className="flex items-center gap-2.5 text-accent-warn">
                 <AlertTriangle className="w-5 h-5" />
                 <h2 className="text-lg font-bold text-text-primary">The Architectural Challenge</h2>
@@ -144,7 +168,11 @@ export const CaseStudy: React.FC = () => {
               </p>
             </section>
 
-            <section className="bg-panel backdrop-blur shadow-soft rounded-lg p-6 border border-accent-primary/30 space-y-3">
+            <section
+              className={`bg-panel backdrop-blur shadow-soft rounded-lg p-6 border border-accent-primary/30 space-y-3 reveal-element ${
+                challengeReveal.isVisible ? 'is-visible' : ''
+              } stagger-2`}
+            >
               <div className="flex items-center gap-2.5 text-accent-primary">
                 <CheckCircle2 className="w-5 h-5" />
                 <h2 className="text-lg font-bold text-text-primary">Engineering Solution</h2>
@@ -156,14 +184,24 @@ export const CaseStudy: React.FC = () => {
           </div>
 
           {/* Architecture Highlights */}
-          <section className="bg-panel backdrop-blur shadow-soft rounded-lg p-6 md:p-8 border border-accent-primary/20 space-y-4">
+          <section
+            ref={archReveal.ref}
+            className={`bg-panel backdrop-blur shadow-soft rounded-lg p-6 md:p-8 border border-accent-primary/20 space-y-4 reveal-element ${
+              archReveal.isVisible ? 'is-visible' : ''
+            }`}
+          >
             <div className="flex items-center gap-2.5 text-accent-primary">
               <Layers className="w-5 h-5" />
               <h2 className="text-xl font-bold text-text-primary">System Architecture & Technical Highlights</h2>
             </div>
             <ul className="space-y-3 pt-2 font-mono text-xs">
               {caseStudy.architecture.map((item, idx) => (
-                <li key={idx} className="flex items-start gap-3 bg-bg-base/60 p-3.5 rounded-lg border border-accent-primary/15">
+                <li
+                  key={idx}
+                  className={`flex items-start gap-3 bg-bg-base/60 p-3.5 rounded-lg border border-accent-primary/15 reveal-element ${
+                    archReveal.isVisible ? 'is-visible' : ''
+                  } stagger-${(idx % 4) + 1}`}
+                >
                   <ChevronRight className="w-4 h-4 text-accent-primary shrink-0 mt-0.5" />
                   <span className="text-text-primary leading-normal">{item}</span>
                 </li>
@@ -172,7 +210,12 @@ export const CaseStudy: React.FC = () => {
           </section>
 
           {/* Key Performance Metrics */}
-          <section className="bg-panel backdrop-blur shadow-soft rounded-lg p-6 md:p-8 border border-accent-primary/30 space-y-6">
+          <section
+            ref={metricsReveal.ref}
+            className={`bg-panel backdrop-blur shadow-soft rounded-lg p-6 md:p-8 border border-accent-primary/30 space-y-6 reveal-element ${
+              metricsReveal.isVisible ? 'is-visible' : ''
+            }`}
+          >
             <div className="flex items-center gap-2.5 text-accent-warn">
               <Award className="w-5 h-5" />
               <h2 className="text-xl font-bold text-text-primary">Key Performance Metrics & Empirical Impact</h2>
@@ -181,7 +224,9 @@ export const CaseStudy: React.FC = () => {
               {caseStudy.metrics.map((metric, idx) => (
                 <div
                   key={idx}
-                  className="bg-bg-base/80 p-5 rounded-lg border border-accent-primary/20 space-y-2"
+                  className={`bg-bg-base/80 p-5 rounded-lg border border-accent-primary/20 space-y-2 reveal-element ${
+                    metricsReveal.isVisible ? 'is-visible' : ''
+                  } stagger-${(idx % 3) + 1}`}
                 >
                   <span className="text-[10px] font-mono uppercase tracking-wider text-accent-primary font-bold">
                     Metric #{idx + 1}

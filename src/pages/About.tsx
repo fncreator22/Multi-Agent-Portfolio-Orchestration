@@ -14,8 +14,15 @@ import {
 } from 'lucide-react';
 import { BIO_DATA } from '../constants/bio';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 export const About: React.FC = () => {
+  const heroReveal = useScrollReveal<HTMLElement>();
+  const summaryReveal = useScrollReveal<HTMLElement>();
+  const skillsReveal = useScrollReveal<HTMLElement>();
+  const principlesReveal = useScrollReveal<HTMLElement>();
+  const ctaReveal = useScrollReveal<HTMLDivElement>();
+
   const orchestrationPrinciples = [
     {
       icon: <Brain className="w-6 h-6 text-accent-primary" />,
@@ -50,7 +57,12 @@ export const About: React.FC = () => {
         <Breadcrumbs />
 
         {/* Hero Section */}
-        <header className="bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6">
+        <header
+          ref={heroReveal.ref}
+          className={`bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6 reveal-element ${
+            heroReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent-primary/30 bg-accent-primary/10 text-xs font-mono text-accent-primary">
@@ -77,7 +89,12 @@ export const About: React.FC = () => {
         </header>
 
         {/* Bio Summary Section */}
-        <section className="bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6">
+        <section
+          ref={summaryReveal.ref}
+          className={`bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6 reveal-element ${
+            summaryReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <div className="flex items-center gap-3 border-b border-accent-primary/20 pb-4">
             <Code2 className="w-5 h-5 text-accent-primary" />
             <h2 className="text-xl font-bold text-text-primary">Executive Summary</h2>
@@ -86,15 +103,15 @@ export const About: React.FC = () => {
             {BIO_DATA.summary}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 font-mono text-xs">
-            <div className="p-4 rounded-xl bg-bg-base/60 border border-accent-primary/20 space-y-1">
+            <div className={`p-4 rounded-xl bg-bg-base/60 border border-accent-primary/20 space-y-1 reveal-element ${summaryReveal.isVisible ? 'is-visible' : ''} stagger-1`}>
               <span className="text-text-muted">Core Focus</span>
               <p className="text-accent-primary font-semibold">Agentic RAG & MCP Protocols</p>
             </div>
-            <div className="p-4 rounded-xl bg-bg-base/60 border border-accent-primary/20 space-y-1">
+            <div className={`p-4 rounded-xl bg-bg-base/60 border border-accent-primary/20 space-y-1 reveal-element ${summaryReveal.isVisible ? 'is-visible' : ''} stagger-2`}>
               <span className="text-text-muted">Vision Engineering</span>
               <p className="text-accent-warn font-semibold">YOLOv8/v11 & Edge Quantization</p>
             </div>
-            <div className="p-4 rounded-xl bg-bg-base/60 border border-accent-primary/20 space-y-1">
+            <div className={`p-4 rounded-xl bg-bg-base/60 border border-accent-primary/20 space-y-1 reveal-element ${summaryReveal.isVisible ? 'is-visible' : ''} stagger-3`}>
               <span className="text-text-muted">Web & Infrastructure</span>
               <p className="text-accent-primary font-semibold">TypeScript, React, FastAPI, Docker</p>
             </div>
@@ -102,17 +119,24 @@ export const About: React.FC = () => {
         </section>
 
         {/* Technical Skills Breakdown */}
-        <section className="bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6">
+        <section
+          ref={skillsReveal.ref}
+          className={`bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6 reveal-element ${
+            skillsReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <div className="flex items-center gap-3 border-b border-accent-primary/20 pb-4">
             <Server className="w-5 h-5 text-accent-warn" />
             <h2 className="text-xl font-bold text-text-primary">Technical Skills & Technology Matrix</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {BIO_DATA.skills.map((skillGroup) => (
+            {BIO_DATA.skills.map((skillGroup, idx) => (
               <div
                 key={skillGroup.category}
-                className="bg-bg-base/60 p-5 rounded-xl border border-accent-primary/20 space-y-3"
+                className={`bg-bg-base/60 p-5 rounded-xl border border-accent-primary/20 space-y-3 reveal-element ${
+                  skillsReveal.isVisible ? 'is-visible' : ''
+                } stagger-${(idx % 4) + 1}`}
               >
                 <h3 className="text-xs font-mono text-accent-warn font-bold uppercase tracking-wider flex items-center gap-1.5">
                   <GitBranch className="w-3.5 h-3.5" />
@@ -132,7 +156,12 @@ export const About: React.FC = () => {
         </section>
 
         {/* Multi-Agent Orchestration Principles */}
-        <section className="bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-8">
+        <section
+          ref={principlesReveal.ref}
+          className={`bg-panel backdrop-blur-md shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-8 reveal-element ${
+            principlesReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <div className="flex items-center gap-3 border-b border-accent-primary/20 pb-4">
             <Brain className="w-5 h-5 text-accent-primary" />
             <div>
@@ -149,7 +178,9 @@ export const About: React.FC = () => {
             {orchestrationPrinciples.map((item, idx) => (
               <div
                 key={idx}
-                className="bg-bg-base/60 p-6 rounded-xl border border-accent-primary/20 hover:border-accent-primary/50 transition-all space-y-3"
+                className={`bg-bg-base/60 p-6 rounded-xl border border-accent-primary/20 hover:border-accent-primary/50 transition-all space-y-3 reveal-element ${
+                  principlesReveal.isVisible ? 'is-visible' : ''
+                } stagger-${(idx % 4) + 1}`}
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-bg-base border border-accent-primary/30">
@@ -168,7 +199,12 @@ export const About: React.FC = () => {
         </section>
 
         {/* CTA Banner */}
-        <div className="bg-panel backdrop-blur-md shadow-soft rounded-2xl p-8 border border-accent-primary/30 text-center space-y-4">
+        <div
+          ref={ctaReveal.ref}
+          className={`bg-panel backdrop-blur-md shadow-soft rounded-2xl p-8 border border-accent-primary/30 text-center space-y-4 reveal-element ${
+            ctaReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <h2 className="text-2xl font-bold text-text-primary">
             Ready to Build Next-Gen Agentic Architecture?
           </h2>

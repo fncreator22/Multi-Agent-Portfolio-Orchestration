@@ -4,9 +4,15 @@ import { Terminal, FolderGit2, ExternalLink, ArrowRight, Sparkles, Filter } from
 import { EntranceScene, GuardianVisualizer } from '../components/canvas';
 import { PROJECTS } from '../constants/projects';
 import { BIO_DATA } from '../constants/bio';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 export const Home: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
+  const headerReveal = useScrollReveal<HTMLElement>();
+  const bioReveal = useScrollReveal<HTMLElement>();
+  const filterReveal = useScrollReveal<HTMLDivElement>();
+  const projectsReveal = useScrollReveal<HTMLElement>();
 
   const categories = ['All', ...Array.from(new Set(PROJECTS.map((p) => p.category)))];
 
@@ -18,7 +24,12 @@ export const Home: React.FC = () => {
     <div className="min-h-screen bg-bg-base text-text-primary p-6 md:p-12 font-display">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Top Header & Visualizers */}
-        <header className="bg-panel backdrop-blur shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-8">
+        <header
+          ref={headerReveal.ref}
+          className={`bg-panel backdrop-blur shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-8 reveal-element ${
+            headerReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent-primary/30 bg-accent-primary/10 text-xs font-mono text-accent-primary">
@@ -46,7 +57,12 @@ export const Home: React.FC = () => {
         </header>
 
         {/* Bio & Skills Overview Section */}
-        <section className="bg-panel backdrop-blur shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6">
+        <section
+          ref={bioReveal.ref}
+          className={`bg-panel backdrop-blur shadow-soft rounded-2xl p-6 md:p-8 border border-accent-primary/20 space-y-6 reveal-element ${
+            bioReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <div className="flex items-center justify-between border-b border-accent-primary/20 pb-4">
             <div className="flex items-center gap-3">
               <Sparkles className="w-5 h-5 text-accent-primary" />
@@ -65,10 +81,12 @@ export const Home: React.FC = () => {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-            {BIO_DATA.skills.map((skillGroup) => (
+            {BIO_DATA.skills.map((skillGroup, idx) => (
               <div
                 key={skillGroup.category}
-                className="bg-panel backdrop-blur shadow-soft rounded-lg p-4 border border-accent-primary/20 space-y-2"
+                className={`bg-panel backdrop-blur shadow-soft rounded-lg p-4 border border-accent-primary/20 space-y-2 reveal-element ${
+                  bioReveal.isVisible ? 'is-visible' : ''
+                } stagger-${(idx % 4) + 1}`}
               >
                 <h4 className="text-xs font-mono text-accent-warn font-bold uppercase tracking-wider">
                   {skillGroup.category}
@@ -86,7 +104,12 @@ export const Home: React.FC = () => {
         </section>
 
         {/* Category Filters */}
-        <div className="bg-panel backdrop-blur shadow-soft rounded-xl p-4 border border-accent-primary/20 space-y-3">
+        <div
+          ref={filterReveal.ref}
+          className={`bg-panel backdrop-blur shadow-soft rounded-xl p-4 border border-accent-primary/20 space-y-3 reveal-element ${
+            filterReveal.isVisible ? 'is-visible' : ''
+          }`}
+        >
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-mono text-text-muted mr-2 flex items-center gap-1.5">
               <Filter className="w-3.5 h-3.5 text-accent-primary" /> Filter Category:
@@ -108,7 +131,11 @@ export const Home: React.FC = () => {
         </div>
 
         {/* Projects Listing Section */}
-        <section id="projects-section" className="space-y-6">
+        <section
+          ref={projectsReveal.ref}
+          id="projects-section"
+          className={`space-y-6 reveal-element ${projectsReveal.isVisible ? 'is-visible' : ''}`}
+        >
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-text-primary flex items-center gap-2">
               <FolderGit2 className="w-6 h-6 text-accent-primary" />
@@ -119,10 +146,12 @@ export const Home: React.FC = () => {
 
           {/* Card Grid Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
+            {filteredProjects.map((project, idx) => (
               <div
                 key={project.id}
-                className="group relative flex flex-col justify-between bg-panel backdrop-blur shadow-soft rounded-lg border border-accent-primary/20 p-6 hover:border-accent-primary/60 transition-all duration-300 transform hover:-translate-y-1"
+                className={`group relative flex flex-col justify-between bg-panel backdrop-blur shadow-soft rounded-lg border border-accent-primary/20 p-6 hover:border-accent-primary/60 transition-all duration-300 transform hover:-translate-y-1 reveal-element ${
+                  projectsReveal.isVisible ? 'is-visible' : ''
+                } stagger-${(idx % 4) + 1}`}
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2">
