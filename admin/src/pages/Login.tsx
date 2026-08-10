@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, AlertCircle, Info, Key } from 'lucide-react';
+import { Lock, AlertCircle, Info, Key, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Login: React.FC = () => {
@@ -63,15 +63,16 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg-base text-text-primary flex flex-col items-center justify-center p-4 font-display">
-      <div className="w-full max-w-md bg-bg-base border border-text-muted/20 rounded-xl p-8 shadow-2xl space-y-6">
+      <div className="w-full max-w-md bg-panel backdrop-blur shadow-soft rounded-2xl border border-accent-primary/20 p-8 space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-primary/10 border border-accent-primary/30 text-accent-primary mb-2 font-mono">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-primary/10 border border-accent-primary/30 text-accent-primary mb-2 font-mono relative">
             <Lock className="w-6 h-6" />
+            <Sparkles className="w-3.5 h-3.5 absolute -top-1 -right-1 text-accent-primary animate-pulse" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-text-primary">
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary flex items-center justify-center gap-2">
             Admin Authentication
           </h1>
-          <p className="text-sm text-text-muted">
+          <p className="text-sm text-text-muted font-body">
             {step === 'email'
               ? 'Enter your email to receive a 6-digit login OTP code'
               : `Enter the 6-digit OTP code sent to ${email}`}
@@ -111,15 +112,16 @@ export const Login: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@example.com"
-                className="w-full px-4 py-3 bg-bg-base border border-text-muted/30 rounded-lg text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary font-mono text-sm"
+                className="w-full px-4 py-3 bg-bg-base/60 border border-accent-primary/20 focus:border-accent-primary rounded-lg text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-1 focus:ring-accent-primary font-body text-sm transition-colors"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-accent-primary text-bg-base font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-sm tracking-wide"
+              className="w-full py-3 px-4 bg-accent-primary text-bg-base font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-sm tracking-wide flex items-center justify-center gap-2"
             >
+              <Sparkles className="w-4 h-4" />
               {loading ? 'Requesting OTP...' : 'Send Verification OTP'}
             </button>
           </form>
@@ -136,15 +138,16 @@ export const Login: React.FC = () => {
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
                 placeholder="123456"
-                className="w-full px-4 py-3 bg-bg-base border border-accent-primary/50 rounded-lg text-accent-primary placeholder:text-text-muted/50 focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary font-mono text-xl text-center tracking-[0.5em]"
+                className="w-full px-4 py-3 bg-bg-base/60 border border-accent-primary/30 focus:border-accent-primary rounded-lg text-accent-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-1 focus:ring-accent-primary font-mono text-xl text-center tracking-[0.5em] transition-colors"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-accent-primary text-bg-base font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-sm tracking-wide"
+              className="w-full py-3 px-4 bg-accent-primary text-bg-base font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-sm tracking-wide flex items-center justify-center gap-2"
             >
+              <Key className="w-4 h-4" />
               {loading ? 'Verifying OTP...' : 'Verify OTP & Log In'}
             </button>
 
