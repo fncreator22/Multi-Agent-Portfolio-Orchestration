@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+admin/node_modules/
+
+# Production build output
+dist/
+admin/dist/
+
+# Python cache & virtualenv
+__pycache__/
+*.pyc
+venv/
+.venv/
+agent-service/logs/*.log
+
+# Vector Store & Databases
+chroma_db/
+agent-service/chroma_db/
+*.db
+api/*.db
+agent-service/data/*.joblib
+
+# Environment Variables
+.env
+.env.local
+*.env
+
+# IDE & OS files
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db

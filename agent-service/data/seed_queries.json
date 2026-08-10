@@ -1,0 +1,202 @@
+[
+  {
+    "query": "What tech stack was used for sentinel-mcp?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Show me the computer vision projects",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "What is the problem statement for lato-validation?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Does the lawyer portfolio have a live demo?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Where can I find the GitHub repository for sentinel-mcp?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "List all projects built with React and TypeScript",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "What are the performance metrics for lato-validation?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "What solution was implemented in lawyer-portfolio?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Give me an overview of the sentinel-mcp architecture",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "What categories of projects are in the portfolio?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Which project uses ChromaDB and FastAPI?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "What is the live URL for the project sentinel-mcp?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Tell me about the web development projects",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Show me the project details for lato-validation",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "What technologies were used to build the lawyer portfolio?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "What problem does sentinel-mcp solve?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Are there any machine learning projects listed?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "What is the summary description of lato-validation?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Which projects feature Docker or Kubernetes?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "What is the GitHub link for the lawyer portfolio?",
+    "label": 0,
+    "category": "retrieval_only"
+  },
+  {
+    "query": "Can you write a custom code snippet for YOLOv8?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "How would you solve an edge case in distributed RAG?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Tell me a joke about computer vision",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "What is your philosophy on multi-agent architectures?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Can you write a Python script to calculate cosine similarity?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Explain how transformer attention mechanism works",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "How would you optimize vector search latency for millions of documents?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Can you draft a cover letter for a Senior AI Engineer position?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Write a step-by-step guide to fine-tuning Llama 3 on custom data",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "What are the key differences between dense and sparse vector retrievers?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "How do you handle prompt injection attacks in production agents?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Write a React hook for debouncing user search input",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Can you solve this math problem using Python?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "How would you architect a real-time speech processing system?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Give me advice on preparing for a system design interview",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Explain quantum computing in simple terms",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Write a PyTorch training loop with mixed precision",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "How do you debug memory leaks in Node.js applications?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "What is the meaning of life, universe and everything?",
+    "label": 1,
+    "category": "escalate_llm"
+  },
+  {
+    "query": "Can you write a poem about software engineering?",
+    "label": 1,
+    "category": "escalate_llm"
+  }
+]

@@ -1,0 +1,46 @@
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.mode-terminal body {
+  font-family: var(--font-mono);
+}
+
+/* CRT scanlines visual effect for terminal mode */
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.25) 50%
+  );
+  background-size: 100% 4px;
+}
+
+.scanlines {
+  background-size: 100% 4px;
+}
+
+.terminal-glow {
+  text-shadow: 0 0 8px var(--accent-primary);
+}
+
+.terminal-box-glow {
+  box-shadow: 0 0 15px rgba(94, 234, 212, 0.15);
+}
