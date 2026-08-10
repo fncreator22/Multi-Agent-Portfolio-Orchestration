@@ -5,7 +5,8 @@ import { Login } from './pages/Login';
 import { LeadsDashboard } from './pages/LeadsDashboard';
 import { KBEditor } from './pages/KBEditor';
 import { DigestHistory } from './pages/DigestHistory';
-import { Users, Database, Activity, ExternalLink, LogOut, Lock } from 'lucide-react';
+import { FineTuneQueue } from './pages/FineTuneQueue';
+import { Users, Database, Activity, Cpu, ExternalLink, LogOut, Lock } from 'lucide-react';
 
 const ProtectedLayout: React.FC = () => {
   const { isAuthenticated, adminEmail, logout } = useAuth();
@@ -61,6 +62,16 @@ const ProtectedLayout: React.FC = () => {
           >
             <Activity className="w-4 h-4" /> Performance Digests
           </Link>
+          <Link
+            to="/finetune"
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              isActive('/finetune')
+                ? 'text-accent-primary bg-accent-primary/10 border border-accent-primary/30 shadow-sm'
+                : 'text-text-muted hover:text-text-primary border border-transparent'
+            }`}
+          >
+            <Cpu className="w-4 h-4" /> SLM Fine-Tune
+          </Link>
           <a
             href="http://localhost:5173"
             target="_blank"
@@ -94,6 +105,7 @@ export const AppContent: React.FC = () => {
         <Route path="/leads" element={<LeadsDashboard />} />
         <Route path="/kb" element={<KBEditor />} />
         <Route path="/digests" element={<DigestHistory />} />
+        <Route path="/finetune" element={<FineTuneQueue />} />
       </Route>
       <Route path="/" element={<Navigate to="/leads" replace />} />
       <Route path="*" element={<Navigate to="/leads" replace />} />

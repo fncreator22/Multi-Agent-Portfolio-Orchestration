@@ -22,7 +22,9 @@ from database import (
     check_otp_rate_limit, get_kb_projects, save_kb_project,
     log_conversation_turn, link_session_to_lead, get_conversations_by_session,
     get_conversations_by_lead, get_db_connection,
-    get_digests, get_digest_by_id, generate_fortnightly_summary
+    get_digests, get_digest_by_id, generate_fortnightly_summary,
+    add_to_finetune_queue, get_finetune_queue, review_finetune_item,
+    run_finetune_cycle, get_model_versions, rollback_model_version
 )
 from digest_service import run_fortnightly_digest
 
@@ -129,6 +131,21 @@ class LogTurnRequest(BaseModel):
 
 class DigestTriggerPayload(BaseModel):
     days: Optional[int] = 14
+
+class ReviewFinetuneRequest(BaseModel):
+    item_id: int
+    status: str
+
+class AddFinetuneItemRequest(BaseModel):
+    session_id: str
+    visitor_query: str
+    context_retrieved: str
+    llm_response: str
+    grounding_score: float
+    status: Optional[str] = "pending"
+
+class RollbackVersionRequest(BaseModel):
+    version_id: int
 
 @app.get("/health")
 async def health_check():
@@ -412,6 +429,107 @@ async def get_digest_endpoint(digest_id: int):
     return {
         "status": "success",
         "digest": digest
+    }
+
+# Admin SLM Fine-Tune Endpoints
+@app.get("/api/admin/finetune/queue")
+async def get_finetune_queue_endpoint(status: Optional[str] = "pending"):
+    queue = get_finetune_queue(status=status)
+    return {
+        "status": "success",
+        "queue": queue
+    }
+
+@app.post("/api/admin/finetune/queue/add")
+async def add_finetune_queue_endpoint(req: AddFinetuneItemRequest):
+    session_id = strip_html_tags(req.session_id)
+    visitor_query = strip_html_tags(req.visitor_query)
+    context_retrieved = strip_html_tags(req.context_retrieved)
+    llm_response = strip_html_tags(req.llm_response)
+    if not session_id or not visitor_query:
+        raise HTTPException(status_code=400, detail="session_id and visitor_query are required.")
+    item = add_to_finetune_queue(
+        session_id=session_id,
+        visitor_query=visitor_query,
+        context_retrieved=context_retrieved,
+        llm_response=llm_response,
+        grounding_score=req.grounding_score,
+        status=req.status or "pending"
+    )
+    return {
+        "status": "success",
+        "message": "Item added to finetune queue successfully",
+        "item": item
+    }
+
+@app.post("/api/admin/finetune/review")
+async def review_finetune_item_endpoint(req: ReviewFinetuneRequest):
+    status_clean = req.status.strip().lower()
+    if status_clean not in ["approved", "rejected"]:
+        raise HTTPException(status_code=400, detail="Status must be 'approved' or 'rejected'.")
+    updated_item = review_finetune_item(req.item_id, status_clean)
+    if not updated_item:
+        raise HTTPException(status_code=404, detail="Finetune queue item not found.")
+    return {
+        "status": "success",
+        "message": f"Finetune item {req.item_id} status updated to {status_clean}",
+        "item": updated_item
+    }
+
+@app.post("/api/admin/finetune/run")
+async def run_finetune_job_endpoint():
+    res = run_finetune_cycle()
+    return res
+
+@app.get("/api/admin/finetune/status")
+async def get_finetune_status_endpoint():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) as count FROM finetune_queue WHERE status = 'pending'")
+    pending_queue_count = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT COUNT(*) as count FROM finetune_queue WHERE status = 'approved'")
+    approved_dataset_size = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT version_tag, dataset_size, created_at FROM model_versions WHERE is_active = 1 LIMIT 1")
+    active_version_row = cursor.fetchone()
+
+    if active_version_row:
+        active_model_version = active_version_row["version_tag"]
+        last_finetune_date = active_version_row["created_at"]
+        dataset_size = active_version_row["dataset_size"]
+    else:
+        active_model_version = None
+        last_finetune_date = None
+        dataset_size = approved_dataset_size
+
+    conn.close()
+
+    return {
+        "status": "success",
+        "last_finetune_date": last_finetune_date,
+        "dataset_size": dataset_size,
+        "active_model_version": active_model_version,
+        "pending_queue_count": pending_queue_count
+    }
+
+@app.get("/api/admin/finetune/versions")
+async def get_model_versions_endpoint():
+    versions = get_model_versions()
+    return {
+        "status": "success",
+        "versions": versions
+    }
+
+@app.post("/api/admin/finetune/rollback")
+async def rollback_model_version_endpoint(req: RollbackVersionRequest):
+    updated = rollback_model_version(req.version_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Model version not found.")
+    return {
+        "status": "success",
+        "message": f"Successfully rolled back active model to version ID {req.version_id}",
+        "version": updated
     }
 
 if __name__ == "__main__":

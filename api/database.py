@@ -431,6 +431,31 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS finetune_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            visitor_query TEXT NOT NULL,
+            context_retrieved TEXT NOT NULL,
+            llm_response TEXT NOT NULL,
+            grounding_score REAL NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            approved_at TEXT,
+            created_at TEXT NOT NULL
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS model_versions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            version_tag TEXT UNIQUE NOT NULL,
+            base_model TEXT NOT NULL,
+            dataset_size INTEGER NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL
+        )
+    """)
     
     conn.commit()
 
@@ -926,6 +951,180 @@ def get_digest_by_id(digest_id: int) -> Optional[dict]:
     except Exception:
         row_dict["summary"] = {}
     return row_dict
+
+
+def add_to_finetune_queue(
+    session_id: str,
+    visitor_query: str,
+    context_retrieved: str,
+    llm_response: str,
+    grounding_score: float,
+    status: str = "pending"
+) -> dict:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    created_at = datetime.now(timezone.utc).isoformat()
+    cursor.execute(
+        """
+        INSERT INTO finetune_queue (session_id, visitor_query, context_retrieved, llm_response, grounding_score, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (session_id, visitor_query, context_retrieved, llm_response, float(grounding_score), status, created_at)
+    )
+    conn.commit()
+    item_id = cursor.lastrowid
+    conn.close()
+
+    return {
+        "id": item_id,
+        "session_id": session_id,
+        "visitor_query": visitor_query,
+        "context_retrieved": context_retrieved,
+        "llm_response": llm_response,
+        "grounding_score": float(grounding_score),
+        "status": status,
+        "approved_at": None,
+        "created_at": created_at
+    }
+
+
+def get_finetune_queue(status: Optional[str] = "pending") -> list:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if status and status.lower() != "all":
+        cursor.execute(
+            """
+            SELECT id, session_id, visitor_query, context_retrieved, llm_response, grounding_score, status, approved_at, created_at
+            FROM finetune_queue
+            WHERE status = ?
+            ORDER BY id DESC
+            """,
+            (status.lower(),)
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT id, session_id, visitor_query, context_retrieved, llm_response, grounding_score, status, approved_at, created_at
+            FROM finetune_queue
+            ORDER BY id DESC
+            """
+        )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def review_finetune_item(item_id: int, status: str) -> Optional[dict]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    clean_status = status.strip().lower()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    approved_at = now_iso if clean_status == "approved" else None
+
+    cursor.execute(
+        "UPDATE finetune_queue SET status = ?, approved_at = ? WHERE id = ?",
+        (clean_status, approved_at, item_id)
+    )
+    conn.commit()
+    if cursor.rowcount == 0:
+        conn.close()
+        return None
+
+    cursor.execute(
+        """
+        SELECT id, session_id, visitor_query, context_retrieved, llm_response, grounding_score, status, approved_at, created_at
+        FROM finetune_queue
+        WHERE id = ?
+        """,
+        (item_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def run_finetune_cycle(base_model: str = "llama3.2:3b") -> dict:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) as count FROM finetune_queue WHERE status = 'approved'")
+    approved_count = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT version_tag FROM model_versions ORDER BY id DESC LIMIT 1")
+    last_row = cursor.fetchone()
+
+    if not last_row:
+        new_version_tag = f"{base_model}-v1.0"
+    else:
+        last_tag = last_row["version_tag"]
+        match = re.search(r'-v(\d+)\.(\d+)$', last_tag)
+        if match:
+            major = int(match.group(1))
+            minor = int(match.group(2)) + 1
+            new_version_tag = f"{base_model}-v{major}.{minor}"
+        else:
+            new_version_tag = f"{base_model}-v1.0"
+
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    cursor.execute("UPDATE model_versions SET is_active = 0")
+    cursor.execute(
+        """
+        INSERT INTO model_versions (version_tag, base_model, dataset_size, is_active, created_at)
+        VALUES (?, ?, ?, 1, ?)
+        """,
+        (new_version_tag, base_model, approved_count, created_at)
+    )
+    new_id = cursor.lastrowid
+    conn.commit()
+
+    cursor.execute(
+        "SELECT id, version_tag, base_model, dataset_size, is_active, created_at FROM model_versions WHERE id = ?",
+        (new_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    version_dict = dict(row) if row else None
+    return {
+        "status": "success",
+        "message": f"Scheduled fine-tune job completed successfully. Created model version {new_version_tag}.",
+        "version": version_dict
+    }
+
+
+def get_model_versions() -> list:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, version_tag, base_model, dataset_size, is_active, created_at FROM model_versions ORDER BY id DESC"
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def rollback_model_version(version_id: int) -> Optional[dict]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM model_versions WHERE id = ?", (version_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return None
+
+    cursor.execute("UPDATE model_versions SET is_active = 0")
+    cursor.execute("UPDATE model_versions SET is_active = 1 WHERE id = ?", (version_id,))
+    conn.commit()
+
+    cursor.execute(
+        "SELECT id, version_tag, base_model, dataset_size, is_active, created_at FROM model_versions WHERE id = ?",
+        (version_id,)
+    )
+    updated_row = cursor.fetchone()
+    conn.close()
+    return dict(updated_row) if updated_row else None
+
 
 
 

@@ -146,3 +146,22 @@
 [2026-08-10 15:04:29] [FALLBACK] ENABLE_SMTP is false. Email to ['yalic72826@netiren.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
 [2026-08-10 15:04:38] [FALLBACK] ENABLE_SMTP is false. Email to ['yalic72826@netiren.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
 [2026-08-10 15:04:39] [FALLBACK] ENABLE_SMTP is false. Email to ['yalic72826@netiren.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['owner@portfolio.internal'] (Subject: 'New Portfolio Lead: Jane Doe') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['owner@portfolio.internal'] (Subject: 'New Portfolio Lead: Evil Script') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['client@example.com', 'owner@portfolio.internal'] (Subject: 'Consultation Booking Confirmed (2026-08-11T10:00:00Z)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['admin@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['otp_conversation_link@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['owner@portfolio.internal'] (Subject: 'Fortnightly Performance Digest [DIGEST-DD016B16]') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['owner@portfolio.internal'] (Subject: 'Fortnightly Performance Digest [DIGEST-A2E778DC]') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['admin@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['owner@portfolio.internal'] (Subject: 'New Portfolio Lead: <script>alert('xss')</script>John Doe') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['client@example.com', 'owner@portfolio.internal'] (Subject: 'Consultation Booking Confirmed (2026-08-11T10:00:00Z)') logged to fallback.
+[2026-08-10 17:29:20] [SUCCESS] Email sent to ['test@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') via SMTP.
+[2026-08-10 17:29:20] [ERROR] SMTP failure sending email to ['test@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)'): SMTP Connection Refused
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['endpoint_rl@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['endpoint_rl@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['endpoint_rl@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['endpoint_rl@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['endpoint_rl@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['lead_booking@example.com'] (Subject: 'Your Admin Security Verification Code (OTP)') logged to fallback.
+[2026-08-10 17:29:20] [FALLBACK] ENABLE_SMTP is false. Email to ['lead_booking@example.com', 'owner@portfolio.internal'] (Subject: 'Consultation Booking Confirmed (2026-08-15T10:00:00Z)') logged to fallback.
