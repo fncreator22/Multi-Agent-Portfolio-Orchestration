@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText } from 'lucide-react';
+import { FileText, Bot, X, Send, Sparkles } from 'lucide-react';
 import { useShell } from '../context/ShellContext';
 import { GuardianVisualizer } from './canvas/GuardianVisualizer';
 
@@ -122,7 +122,7 @@ export const AgentChatWidget: React.FC = () => {
     // Update visualizer state to Stage 1
     setActiveStage('STAGE_1_RETRIEVAL');
 
-    // Simulate progress tick to Stage 2 after 350ms
+    // Progress tick to Stage 2 after 350ms
     const stage2Timeout = setTimeout(() => {
       setActiveStage('STAGE_2_GATE');
     }, 350);
@@ -209,7 +209,6 @@ export const AgentChatWidget: React.FC = () => {
     } finally {
       clearTimeout(stage2Timeout);
       setIsQuerying(false);
-      // Reset active stage to IDLE after 4 seconds
       setTimeout(() => {
         setActiveStage('IDLE');
       }, 4000);
@@ -228,7 +227,7 @@ export const AgentChatWidget: React.FC = () => {
       {/* Floating Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full border border-accent-primary/40 bg-bg-base/90 text-accent-primary shadow-xl hover:border-accent-primary hover:bg-accent-primary/10 transition-all duration-300 font-display"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-panel backdrop-blur shadow-soft rounded-full border border-accent-primary/40 text-accent-primary hover:border-accent-primary hover:bg-accent-primary/10 transition-all duration-300 font-display"
         aria-label="Toggle Agent Chat"
       >
         <span className="relative flex h-3 w-3">
@@ -236,24 +235,26 @@ export const AgentChatWidget: React.FC = () => {
             className={`absolute inline-flex h-full w-full rounded-full ${
               activeStage !== 'IDLE' ? 'bg-accent-warn animate-ping' : 'bg-accent-primary'
             }`}
-          ></span>
+          />
           <span
             className={`relative inline-flex rounded-full h-3 w-3 ${
               activeStage !== 'IDLE' ? 'bg-accent-warn' : 'bg-accent-primary'
             }`}
-          ></span>
+          />
         </span>
-        <span className="text-sm font-semibold tracking-wide">
-          {isOpen ? 'Close Agent' : 'Ask Agent'}
+        <span className="text-sm font-semibold tracking-wide flex items-center gap-1.5">
+          <Bot className="w-4 h-4" />
+          {isOpen ? 'Close Agent' : 'Ask Guardian Agent'}
         </span>
       </button>
 
       {/* Floating Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-20 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[560px] max-h-[85vh] flex flex-col border border-accent-primary/30 bg-bg-base/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden transition-all duration-300">
+        <div className="fixed bottom-20 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[560px] max-h-[85vh] flex flex-col bg-panel backdrop-blur-md shadow-soft rounded-lg border border-accent-primary/30 overflow-hidden transition-all duration-300 font-display">
           {/* Header */}
           <div className="flex items-center justify-between p-3.5 border-b border-accent-primary/20 bg-bg-base/80">
             <div className="flex items-center gap-2.5">
+              <Bot className="w-4 h-4 text-accent-primary" />
               <span className="text-accent-primary font-bold text-sm">
                 Guardian RAG Agent
               </span>
@@ -263,13 +264,13 @@ export const AgentChatWidget: React.FC = () => {
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-text-muted hover:text-accent-warn transition-colors text-sm font-mono px-2 py-1"
+              className="text-text-muted hover:text-accent-warn transition-colors p-1"
             >
-              [X]
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Mini Guardian Visualizer Header Display */}
+          {/* Mini Guardian Visualizer Display */}
           <div className="border-b border-accent-primary/10 bg-bg-base/40 p-2 flex justify-center scale-90 -my-2">
             <GuardianVisualizer activeStage={activeStage} />
           </div>
@@ -290,15 +291,14 @@ export const AgentChatWidget: React.FC = () => {
                 </div>
 
                 <div
-                  className={`p-3 rounded-xl max-w-[88%] whitespace-pre-wrap ${
+                  className={`p-3 rounded-lg max-w-[88%] whitespace-pre-wrap ${
                     msg.sender === 'user'
                       ? 'bg-accent-primary/15 text-text-primary border border-accent-primary/30 rounded-tr-none'
                       : msg.error
                       ? 'bg-accent-warn/15 text-accent-warn border border-accent-warn/30 rounded-tl-none'
-                      : 'bg-bg-base border border-accent-primary/20 text-text-primary rounded-tl-none'
+                      : 'bg-panel backdrop-blur shadow-soft border border-accent-primary/20 text-text-primary rounded-tl-none'
                   }`}
                 >
-                  {/* Escaped & sanitized string rendering */}
                   {msg.text}
 
                   {/* Metadata Badges for Agent Responses */}
@@ -368,7 +368,9 @@ export const AgentChatWidget: React.FC = () => {
 
           {/* Quick Query Suggestion Chips */}
           <div className="px-3 py-1.5 border-t border-accent-primary/10 bg-bg-base/40 flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono">
-            <span className="text-text-muted shrink-0">Try:</span>
+            <span className="text-text-muted shrink-0 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-accent-primary" /> Try:
+            </span>
             {SUGGESTED_QUERIES.map((q) => (
               <button
                 key={q}
@@ -396,9 +398,10 @@ export const AgentChatWidget: React.FC = () => {
               <button
                 onClick={() => handleSend()}
                 disabled={isQuerying || !inputText.trim()}
-                className="px-3 py-2 bg-accent-primary text-bg-base font-mono font-bold text-xs rounded-lg hover:bg-accent-primary/90 transition-colors disabled:opacity-40"
+                className="px-3 py-2 bg-accent-primary text-bg-base font-mono font-bold text-xs rounded-lg hover:bg-accent-primary/90 transition-colors disabled:opacity-40 flex items-center gap-1"
               >
-                {isQuerying ? '...' : 'Send'}
+                <Send className="w-3.5 h-3.5" />
+                <span>{isQuerying ? '...' : 'Send'}</span>
               </button>
             </div>
 
