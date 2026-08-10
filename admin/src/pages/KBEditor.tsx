@@ -198,6 +198,12 @@ export const KBEditor: React.FC = () => {
           >
             Knowledge Base Editor
           </Link>
+          <Link
+            to="/digests"
+            className="px-3 py-1.5 rounded-md text-sm font-medium text-text-muted hover:text-text-primary transition-colors"
+          >
+            Fortnightly Digests
+          </Link>
           <button
             onClick={logout}
             className="px-3 py-1.5 rounded-md text-sm font-medium border border-text-muted/30 text-text-muted hover:text-accent-warn hover:border-accent-warn/40 transition-colors"

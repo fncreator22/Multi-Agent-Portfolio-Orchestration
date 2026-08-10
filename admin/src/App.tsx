@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Login } from './pages/Login';
 import { LeadsDashboard } from './pages/LeadsDashboard';
 import { KBEditor } from './pages/KBEditor';
+import { DigestHistory } from './pages/DigestHistory';
 
 const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -30,6 +31,14 @@ export const AppContent: React.FC = () => {
         element={
           <ProtectedRoute>
             <KBEditor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/digests"
+        element={
+          <ProtectedRoute>
+            <DigestHistory />
           </ProtectedRoute>
         }
       />

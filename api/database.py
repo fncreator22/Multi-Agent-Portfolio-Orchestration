@@ -1,7 +1,9 @@
 import json
 import os
+import re
 import sqlite3
 import time
+import uuid
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -418,6 +420,17 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS digests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            digest_code TEXT UNIQUE NOT NULL,
+            period_start TEXT NOT NULL,
+            period_end TEXT NOT NULL,
+            summary_json TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
     
     conn.commit()
 
@@ -757,5 +770,162 @@ def get_conversations_by_lead(lead_id: int) -> list:
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+def generate_fortnightly_summary(days: int = 14) -> dict:
+    now_dt = datetime.now(timezone.utc)
+    cutoff_dt = now_dt - timedelta(days=days)
+    period_start = cutoff_dt.isoformat()
+    period_end = now_dt.isoformat()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT created_at, status FROM leads")
+    leads_rows = cursor.fetchall()
+    total_leads = 0
+    verified_leads_count = 0
+    for r in leads_rows:
+        try:
+            created_dt = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
+            if created_dt >= cutoff_dt:
+                total_leads += 1
+                if r["status"] == "verified":
+                    verified_leads_count += 1
+        except Exception:
+            pass
+
+    cursor.execute("SELECT created_at FROM bookings")
+    booking_rows = cursor.fetchall()
+    bookings_count = 0
+    for r in booking_rows:
+        try:
+            created_dt = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
+            if created_dt >= cutoff_dt:
+                bookings_count += 1
+        except Exception:
+            pass
+
+    cursor.execute("SELECT session_id, visitor_message, created_at FROM conversations")
+    conv_rows = cursor.fetchall()
+    conversation_turns_count = 0
+    unique_sessions = set()
+    messages_in_period = []
+    for r in conv_rows:
+        try:
+            created_dt = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
+            if created_dt >= cutoff_dt:
+                conversation_turns_count += 1
+                if r["session_id"]:
+                    unique_sessions.add(r["session_id"])
+                if r["visitor_message"]:
+                    messages_in_period.append(r["visitor_message"])
+        except Exception:
+            pass
+
+    conn.close()
+
+    stopwords = {
+        "the", "a", "an", "is", "are", "to", "for", "of", "in", "and", "i", "can", "you",
+        "what", "how", "with", "my", "me", "on", "it", "this", "that", "hello", "hi", "help",
+        "please", "tell", "about", "your", "does", "do", "have", "be", "or", "as", "at", "by", "we", "us"
+    }
+    word_freq = defaultdict(int)
+    for msg in messages_in_period:
+        tokens = re.findall(r'[a-zA-Z0-9]+', msg.lower())
+        for token in tokens:
+            if len(token) >= 3 and token not in stopwords:
+                word_freq[token] += 1
+
+    sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:5]
+    top_query_themes = [{"theme": item[0], "count": item[1]} for item in sorted_words]
+
+    digest_code = f"DIGEST-{uuid.uuid4().hex[:8].upper()}"
+
+    return {
+        "digest_code": digest_code,
+        "period_start": period_start,
+        "period_end": period_end,
+        "total_leads": total_leads,
+        "verified_leads_count": verified_leads_count,
+        "bookings_count": bookings_count,
+        "conversation_turns_count": conversation_turns_count,
+        "unique_sessions_count": len(unique_sessions),
+        "top_query_themes": top_query_themes
+    }
+
+
+def store_digest(digest_data: dict) -> dict:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    digest_code = digest_data.get("digest_code") or f"DIGEST-{uuid.uuid4().hex[:8].upper()}"
+    period_start = digest_data.get("period_start", datetime.now(timezone.utc).isoformat())
+    period_end = digest_data.get("period_end", datetime.now(timezone.utc).isoformat())
+    created_at = digest_data.get("created_at", datetime.now(timezone.utc).isoformat())
+
+    summary_obj = digest_data.get("summary", digest_data)
+    if isinstance(summary_obj, dict):
+        summary_json = json.dumps(summary_obj)
+    elif isinstance(summary_obj, str):
+        summary_json = summary_obj
+        try:
+            summary_obj = json.loads(summary_obj)
+        except Exception:
+            pass
+    else:
+        summary_json = json.dumps(str(summary_obj))
+
+    cursor.execute("""
+        INSERT INTO digests (digest_code, period_start, period_end, summary_json, created_at)
+        VALUES (?, ?, ?, ?, ?)
+    """, (digest_code, period_start, period_end, summary_json, created_at))
+    conn.commit()
+    digest_id = cursor.lastrowid
+    conn.close()
+
+    return {
+        "id": digest_id,
+        "digest_code": digest_code,
+        "period_start": period_start,
+        "period_end": period_end,
+        "summary": summary_obj,
+        "summary_json": summary_json,
+        "created_at": created_at
+    }
+
+
+def get_digests() -> list:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, digest_code, period_start, period_end, summary_json, created_at FROM digests ORDER BY id DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    result = []
+    for r in rows:
+        row_dict = dict(r)
+        try:
+            row_dict["summary"] = json.loads(row_dict["summary_json"])
+        except Exception:
+            row_dict["summary"] = {}
+        result.append(row_dict)
+    return result
+
+
+def get_digest_by_id(digest_id: int) -> Optional[dict]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, digest_code, period_start, period_end, summary_json, created_at FROM digests WHERE id = ?", (digest_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    row_dict = dict(row)
+    try:
+        row_dict["summary"] = json.loads(row_dict["summary_json"])
+    except Exception:
+        row_dict["summary"] = {}
+    return row_dict
+
 
 

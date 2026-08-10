@@ -21,8 +21,10 @@ from database import (
     save_otp, verify_otp, verify_lead_otp, is_lead_verified,
     check_otp_rate_limit, get_kb_projects, save_kb_project,
     log_conversation_turn, link_session_to_lead, get_conversations_by_session,
-    get_conversations_by_lead, get_db_connection
+    get_conversations_by_lead, get_db_connection,
+    get_digests, get_digest_by_id, generate_fortnightly_summary
 )
+from digest_service import run_fortnightly_digest
 
 # Load environment variables
 load_dotenv()
@@ -124,6 +126,9 @@ class LogTurnRequest(BaseModel):
     agent_stage: str
     agent_response: str
     email: Optional[str] = None
+
+class DigestTriggerPayload(BaseModel):
+    days: Optional[int] = 14
 
 @app.get("/health")
 async def health_check():
@@ -378,6 +383,35 @@ async def update_admin_kb(request: Request):
         "status": "success",
         "message": "Knowledge base updated successfully",
         "projects": updated_projects
+    }
+
+# Admin Fortnightly Digest Endpoints
+@app.post("/api/admin/digests/trigger")
+async def trigger_digest_endpoint(payload: Optional[DigestTriggerPayload] = None):
+    days = payload.days if payload and payload.days else 14
+    digest_record = run_fortnightly_digest(days=days)
+    return {
+        "status": "success",
+        "message": "Fortnightly digest generated successfully",
+        "digest": digest_record
+    }
+
+@app.get("/api/admin/digests")
+async def list_digests_endpoint():
+    digests = get_digests()
+    return {
+        "status": "success",
+        "digests": digests
+    }
+
+@app.get("/api/admin/digests/{digest_id}")
+async def get_digest_endpoint(digest_id: int):
+    digest = get_digest_by_id(digest_id)
+    if not digest:
+        raise HTTPException(status_code=404, detail="Digest not found.")
+    return {
+        "status": "success",
+        "digest": digest
     }
 
 if __name__ == "__main__":
